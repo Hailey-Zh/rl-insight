@@ -19,9 +19,11 @@ from rl_insight.data.rules import (
     MstxJsonFieldValidRule,
     TorchJsonFileExistsRule,
     TorchJsonFieldValidRule,
+    NvtxJsonFileExistsRule,
+    NvtxJsonFieldValidRule,
 )
 from rl_insight.data.verl_log_rules import VerlLogExistRule, VerlLogKeyParamsRule
-from test_data_checker import MSTX_PROFILE_PATH, TORCH_PROFILE_PATH
+from test_data_checker import MSTX_PROFILE_PATH, TORCH_PROFILE_PATH, NVTX_PROFILE_PATH
 
 
 def test_path_exists_rule_accepts_existing_directory():
@@ -156,3 +158,23 @@ def test_torch_json_fields_valid():
     filed_rule = TorchJsonFieldValidRule()
     assert path_rule.check(str(TORCH_PROFILE_PATH)) is True
     assert filed_rule.check(str(TORCH_PROFILE_PATH)) is True
+
+
+def test_nvtx_jsonfile_exists():
+    path_rule = PathExistsRule()
+    file_rule = NvtxJsonFileExistsRule()
+    assert path_rule.check(str(NVTX_PROFILE_PATH)) is True
+    assert file_rule.check(str(NVTX_PROFILE_PATH)) is True
+
+
+def test_nvtx_jsonfile_exists_with_fake_path():
+    file_rule = NvtxJsonFileExistsRule()
+    fake_path = "fake_path"
+    assert file_rule.check(fake_path) is False
+
+
+def test_nvtx_json_fields_valid():
+    path_rule = PathExistsRule()
+    field_rule = NvtxJsonFieldValidRule()
+    assert path_rule.check(str(NVTX_PROFILE_PATH)) is True
+    assert field_rule.check(str(NVTX_PROFILE_PATH)) is True
