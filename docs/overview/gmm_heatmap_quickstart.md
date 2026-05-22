@@ -59,25 +59,24 @@ gmm_dump/
 
 路径字段含义：
 
-- `step_<n>`：训练 step（对应 `--step` 过滤）
-- `<role>`：角色名（对应 `--role` 过滤）
-- `rank<n>`：rank id（对应 `--rank-list` 过滤）
+- `step_<n>`：训练 step（对应 `heatmap.parser.step` 过滤）
+- `<role>`：角色名（对应 `heatmap.parser.role` 过滤）
+- `rank<n>`：rank id（对应 `input.rank_list` 过滤）
 - `dump_tensor_data/*.group_list.pt`：MoE grouped_matmul 的专家负载；典型为一维整型张量，第 `i` 个元素表示第 `i` 个 expert 分到的 **token 数**
 
 ### 2.2 执行分析脚本
 
-#### GMM 热力图使用示例
+#### 热力图使用示例
 
 ```bash
-python -m rl_insight.main
-    --input-path <gmm_data_path>
-    --input-type gmm_data
-    --profiler-type gmm
-    --vis-type gmm_heatmap
-    --rank-list all
-    --step 1
-    --role actor_compute_log_prob
-    --output-path <output_path>
+python -m rl_insight.main \
+    input.path=<gmm_data_path> \
+    input.rank_list=all \
+    heatmap.parser.type=gmm \
+    heatmap.visualizer.type=gmm_heatmap \
+    heatmap.parser.step=1 \
+    heatmap.parser.role=actor_compute_log_prob \
+    output.path=<output_path>
 ```
 
 或修改并直接使用 `examples/gmm_exec.sh` 脚本:
@@ -88,22 +87,29 @@ bash examples/gmm_exec.sh
 
 ## 三、命令行参数
 
-以下说明与 `python -m rl_insight.main --help` 保持一致；若有出入以命令行帮助为准。
+以下说明与 `python -m rl_insight.main -h` 保持一致；若有出入以命令行帮助为准。
+
+### 3.1 公共参数
 
 | 参数 | 默认值 | 说明 |
-|------|--------|----|
-| `--input-path` | （必填，无默认值） | GMM 数据的根目录路径 |
-| `--input-type` | `multi_json_mstx` | 输入数据类型，GMM 功能需设置为 `gmm_data` |
-| `--profiler-type` | `mstx` | 性能数据种类，GMM 功能需设置为 `gmm` |
-| `--output-path` | `output` | 输出路径，若为文件夹则在其中生成 `gmm_heatmap.png` |
-| `--vis-type` | `html` | 可视化类型，GMM 功能需设置为 `gmm_heatmap` |
-| `--rank-list` | `all` | Rank ID 列表，默认 `all` 表示所有 rank,可指定多个 rank 用逗号分隔 |
-| `--pipeline-type` | `OfflineInsightPipeline` | 流水线实现类型 |
-| `--step` | 无默认值 | 特定的 step 进行可视化（可选，支持 `1` 或 `1,2`） |
-| `--role` | 无默认值 | 特定的 role 进行可视化（可选） |
-| `--gmm-per-layer` | 3 | 每个 MoE layer 前向阶段预期的 grouped_matmul 次数，用于 actor_update 前向截断判定 |
-| `--dpi` | 150 | 热力图输出的 DPI（默认 150） |
-| `--cmap` | viridis | 热力图的颜色映射（默认 viridis） |
+|------|--------|------|
+| `input.path` | （必填） | GMM 数据的根目录路径 |
+| `output.path` | `output` | 输出路径，若为文件夹则在其中生成 `gmm_heatmap.png` |
+| `input.rank_list` | `all` | Rank ID 列表，默认 `all` 表示所有 rank，可指定多个 rank 用逗号分隔 |
+| `preset` | 自动推断 | 预设名称：`timeline`、`heatmap`（根据 CLI 参数自动推断） |
+| `config_path` | 无 | YAML 配置文件路径 |
+
+### 3.2 Heatmap 专属参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `heatmap.parser.type` | `gmm` | 解析器类型：`gmm` |
+| `heatmap.visualizer.type` | `gmm_heatmap` | 可视化类型 |
+| `heatmap.parser.step` | 无 | 特定的 step 进行可视化（可选，支持 `1` 或 `1,2`） |
+| `heatmap.parser.role` | 无 | 特定的 role 进行可视化（可选） |
+| `heatmap.visualizer.dpi` | `200` | 热力图输出的 DPI |
+| `heatmap.visualizer.cmap` | `viridis` | 热力图的颜色映射 |
+| `heatmap.visualizer.gmm_per_layer` | `3` | 每个 MoE layer 前向阶段预期的 grouped_matmul 次数 |
 
 ## 四、输出说明
 
@@ -132,11 +138,11 @@ bash examples/gmm_exec.sh
 
 ## 五、注意事项
 
-1. GMM 热力图功能需要使用 `--input-type gmm_data` 和 `--profiler-type gmm` 参数
-2. 当 `--output-path` 只指定文件夹路径时，会在该文件夹中生成 `gmm_heatmap.png` 文件
-3. 当不指定 `--step`、`--role` 或 `--rank-list` 参数时，默认显示所有数据
+1. 热力图功能使用 `preset=heatmap` 或在 CLI 中指定 `heatmap.` 开头的参数即可启用
+2. 当 `output.path` 只指定文件夹路径时，会在该文件夹中生成 `gmm_heatmap.png` 文件
+3. 当不指定 `heatmap.parser.step`、`heatmap.parser.role` 或 `input.rank_list` 参数时，默认显示所有数据
 4. 对于大量数据，工具会自动调整图表大小和标签显示密度，确保可读性
 5. 数据文件需包含有效的专家负载数据，包括 step、role、rank_id、stage、expert_index 和 load 等字段
-6. 若你的模型实现中每层 grouped_matmul 次数不等于 3，请显式设置 `--gmm-per-layer` 以获得更准确的 actor_update 前向阶段截断结果
+6. 若你的模型实现中每层 grouped_matmul 次数不等于 3，请显式设置 `heatmap.visualizer.gmm_per_layer` 以获得更准确的 actor_update 前向阶段截断结果
 
 目录与 JSON 字段的集中说明另见 [数据规格与格式说明](../data/data_specification.md)。运行时校验逻辑以 `rl_insight.data.DataChecker` 及 [`rl_insight/data/rules.py`](../../rl_insight/data/rules.py) 中的规则定义为准。

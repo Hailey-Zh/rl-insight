@@ -13,12 +13,15 @@
 # limitations under the License.
 
 import os
+from typing import Union
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from omegaconf import DictConfig
 from plotly.io import to_image
 
+from rl_insight.config import get_config_value
 from rl_insight.data import DataEnum
 from rl_insight.utils.schema import FigureConfig
 
@@ -47,9 +50,9 @@ class RLTimelineVisualizer(BaseVisualizer):
 
     input_type: DataEnum = DataEnum.SUMMARY_EVENT
 
-    def __init__(self, config: dict):
+    def __init__(self, config: Union[DictConfig, dict]):
         super().__init__(config)
-        self.output_path = config.get("output_path", None)
+        self.output_path = get_config_value(config, "output.path", None)
 
     def run(self, data):
         return self.generate_rl_timeline(data)
@@ -405,11 +408,11 @@ class RLTimelinePNGVisualizer(BaseVisualizer):
 
     input_type: DataEnum = DataEnum.SUMMARY_EVENT
 
-    def __init__(self, config: dict):
+    def __init__(self, config: Union[DictConfig, dict]):
         super().__init__(config)
-        self.output_path = config.get("output_path", None)
-        self.width = config.get("width", 2000)
-        self.scale = config.get("scale", 2)
+        self.output_path = get_config_value(config, "output.path", None)
+        self.width = get_config_value(config, "timeline.visualizer.width", 2000)
+        self.scale = get_config_value(config, "timeline.visualizer.scale", 2)
 
     def run(self, data):
         return self.generate_rl_timeline_png(data)

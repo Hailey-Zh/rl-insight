@@ -22,7 +22,10 @@ from rl_insight.visualizer import RLTimelinePNGVisualizer
 @pytest.fixture
 def visualizer():
     """Initialize the visualizer instance for testing."""
-    config = {"output_path": "test_output", "width": 2000, "scale": 2}
+    config = {
+        "output": {"path": "test_output"},
+        "timeline": {"visualizer": {"width": 2000, "scale": 2}},
+    }
     return RLTimelinePNGVisualizer(config)
 
 

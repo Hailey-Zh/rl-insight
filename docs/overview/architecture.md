@@ -20,7 +20,8 @@
 
 | Concept | Location | Role |
 |---------|----------|------|
-| Entry | `rl_insight/main.py`, `rl_insight/pipeline/` | `main` 对接 CLI；`pipeline` 定义业务流程并选择 **Parser** / **Visualizer**。 |
+| Entry | `rl_insight/main.py`, `rl_insight/pipeline/` | `main` 对接 CLI（`key=value` 格式）；`pipeline` 定义业务流程并选择 **Parser** / **Visualizer**。 |
+| Config | `rl_insight/config/config.py`, `rl_insight/config/config_loader.py` | 基于 OmegaConf 的结构化配置，dataclass 定义 schema 与默认值，支持YAML preset场景化覆盖。 |
 | DataRule | `rl_insight/data/data_checker.py`, `rl_insight/data/rules.py` | `DataEnum` 区分数据阶段；`DataChecker` 按类型执行对应的 `ValidationRule`。 |
 | Parser | `rl_insight/parser/parser.py`, `rl_insight/parser/*_parser.py` | 基于约定的 `input_type` 做解析；字段约定见 `rl_insight/utils/schema.py`（`DataMap`、`EventRow`、`Constant` 等）。 |
 | Visualizer | `rl_insight/visualizer/visualizer.py`, `rl_insight/visualizer/timeline_visualizer.py`, … | 消费 **Parser** 输出，基于约定的 `input_type` 做可视化。 |

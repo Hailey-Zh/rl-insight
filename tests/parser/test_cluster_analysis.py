@@ -51,7 +51,10 @@ from rl_insight.visualizer.visualizer import (
 
 
 def _timeline_viz(**kwargs):
-    cfg = {"output_path": "/tmp", "vis_type": "html"}
+    cfg = {
+        "output": {"path": "/tmp"},
+        "timeline": {"visualizer": {"type": "html"}},
+    }
     cfg.update(kwargs)
     return RLTimelineVisualizer(cfg)
 
@@ -992,7 +995,10 @@ class TestIntegration:
                     side_effect=lambda frame, threshold_ms=10.0: frame,
                 ):
                     viz = RLTimelineVisualizer(
-                        {"output_path": output_dir, "vis_type": "html"}
+                        {
+                            "output": {"output_path": output_dir},
+                            "timeline": {"visualizer": {"vis_type": "html"}},
+                        }
                     )
                     viz.generate_rl_timeline(df)
 
@@ -1001,7 +1007,7 @@ class TestIntegration:
 
     @patch(
         "sys.argv",
-        ["main.py", "--input-path", "/tmp", "--profiler-type", "mstx"],
+        ["main.py", "input.path=/tmp", "timeline.parser.type=mstx"],
     )
     @patch("rl_insight.pipeline.offline_insight_pipeline.DataChecker.run")
     @patch("rl_insight.pipeline.offline_insight_pipeline.get_cluster_parser_cls")

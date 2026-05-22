@@ -15,13 +15,15 @@
 from loguru import logger
 import re
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 import pandas as pd
 import numpy as np
 import torch
+from omegaconf import DictConfig
 
+from rl_insight.config import get_config_value
 from rl_insight.parser.parser import BaseClusterParser, register_cluster_parser
-from rl_insight.utils.schema import DataMap, Constant
+from rl_insight.utils.schema import DataMap
 from rl_insight.data import DataEnum
 
 
@@ -29,10 +31,10 @@ from rl_insight.data import DataEnum
 class GmmParser(BaseClusterParser):
     input_type = DataEnum.GMM_DATA
 
-    def __init__(self, params) -> None:
+    def __init__(self, params: Union[DictConfig, dict]) -> None:
         super().__init__(params)
         self.events_summary: Optional[pd.DataFrame] = None
-        rank_list = params.get(Constant.RANK_LIST, "all")
+        rank_list = get_config_value(params, "input.rank_list", "all")
         self._rank_list = (
             rank_list
             if rank_list == "all"
@@ -42,8 +44,7 @@ class GmmParser(BaseClusterParser):
                 if rank.strip().isdigit()
             ]
         )
-        # Get step filter(s) if provided. Supports "1" or "1,2".
-        step = params.get("step", None)
+        step = get_config_value(params, "heatmap.parser.step", None)
         if step is None:
             self._step_list: Optional[list[int]] = None
         elif isinstance(step, int):
@@ -59,8 +60,7 @@ class GmmParser(BaseClusterParser):
                     "Will process all steps."
                 )
                 self._step_list = None
-        # Get role filter if provided
-        self._role = params.get("role", None)
+        self._role = get_config_value(params, "heatmap.parser.role", None)
 
     @staticmethod
     def _normalize_path_text(path_value: str | Path) -> str:
