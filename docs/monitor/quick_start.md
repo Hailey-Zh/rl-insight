@@ -21,7 +21,7 @@ rl-insight --help
 
 ## 2. Install Server Services
 
-RL-Insight depends on Prometheus, Tempo, and Grafana for online monitoring. The easiest Linux path is to let RL-Insight install the supported versions into `~/.rl-insight/services`:
+RL-Insight depends on Prometheus, Tempo, and Grafana for online monitoring. This section shows the direct install path. For supported platforms, offline installation, or using existing service binaries, see [Server Installation](./server_installation.md). The easiest Linux path is to let RL-Insight install the supported versions into `~/.rl-insight/services`:
 
 ```bash
 rl-insight server install
@@ -35,7 +35,7 @@ The installer uses these versions:
 | Tempo | `2.6.1` | `>= 2.0.0` |
 | Grafana | `13.0.0` | `>= 13.0.0` |
 
-If your environment already provides compatible system packages, `server start` can use them directly.
+If your environment already provides compatible system packages, `server start` can use them directly. The detailed options and troubleshooting notes are covered in [Server Installation](./server_installation.md).
 
 ## 3. Start The Stack
 
@@ -73,43 +73,34 @@ Set the RL-Insight server IP before launching or initializing training workers. 
 export RL_INSIGHT_SERVICE_IP=<server-ip>
 ```
 
-Then initialize Ray and enable RL-Insight once per process:
+Then run a small continuous demo. It uses the three metric helpers and one `trace_state` span inside a loop, so Prometheus and Grafana keep receiving representative live samples while it runs:
 
 ```python
+import time
+
 import ray
 import rl_insight as insight
 
-ray.init(address="auto", namespace="rl-insight-monitor")
-insight.init(project="verl", experiment_name="ppo-smoke-test")
+ray.init(namespace="rl-insight-monitor")
+insight.init(project="verl", experiment_name="quick_start_demo")
+
+step = 0
+labels = {"worker": "trainer_0"}
+while True:
+    with insight.trace_state("rollout_generate", state_lane_id="replica_0", step=step):
+        time.sleep(2)
+
+    insight.metric_count("train_step_total", amount=1, **labels)
+    insight.metric_value("reward_mean", value=1.0 + step * 0.01, **labels)
+    insight.metric_distribution(
+        "step_latency_ms", value=200 + (step % 5) * 20, **labels
+    )
+
+    step += 1
+    time.sleep(0.5)
 ```
 
-If your RL framework already integrates RL-Insight, you can start the corresponding RL training job after the server stack is running and `RL_INSIGHT_SERVICE_IP` is set. The manual API calls below are for framework authors or custom training loops.
-
-Record metrics:
-
-```python
-insight.metric_count("train_step_total", amount=1, worker="trainer_0")
-insight.metric_value("reward_mean", value=1.23, worker="trainer_0")
-insight.metric_distribution("step_latency_ms", value=42.5, worker="trainer_0")
-```
-
-Record RL state intervals:
-
-```python
-with insight.trace_state("rollout", state_lane_id="actor_0", step=10):
-    run_rollout()
-
-with insight.trace_state("update_policy", state_lane_id="actor_0", step=10):
-    update_policy(batch)
-```
-
-Decorate synchronous operations when a duration span is enough:
-
-```python
-@insight.trace_op("reward_model", stage="reward")
-def score_responses(batch):
-    return reward_model(batch)
-```
+The demo starts a local Ray runtime. If you already have a Ray cluster for a real training job, connect to it instead, for example `ray.init(address="auto", namespace="rl-insight-monitor")` or by setting `RAY_ADDRESS`. If your RL framework already integrates RL-Insight, you can start the corresponding RL training job after the server stack is running and `RL_INSIGHT_SERVICE_IP` is set. The demo above is for quickly checking custom metric reporting.
 
 ## 5. Open Grafana
 
@@ -126,13 +117,15 @@ username: admin
 password: admin
 ```
 
+After login, open **Dashboards** from the left navigation and choose `RL-Insight`. For the sample script in this guide, select the `quick_start_demo` dashboard and set the time range to a recent window such as **Last 5 minutes** while the script is still running. For framework-specific runs, open the dashboard that matches that integration or experiment.
+
 The bundled provisioning config loads Prometheus and Tempo datasources and dashboard JSON files from:
 
 ```text
 rl_insight/config/services/grafana/dashboards
 ```
 
-Prometheus metrics and Tempo traces are persisted under `~/.rl-insight/data` by default. Stopping the server does not delete collected data.
+If you add or update a dashboard JSON file such as `quick_start_demo.json`, place it in that dashboards directory before starting Grafana, or restart the stack so Grafana provisions the latest file. Prometheus metrics and Tempo traces are persisted under `~/.rl-insight/data` by default. Stopping the server does not delete collected data.
 
 ## 6. Stop Services
 

@@ -47,39 +47,17 @@ https://github.com/user-attachments/assets/0c9797e7-c0a9-4961-9c8f-1a648f038ada
 
 ## Get Started
 
-For the full runnable path, use the dedicated quick start:
+Start with the guide that matches your current setup:
 
-```bash
-pip install -r requirements.txt
-pip install -e .
-rl-insight server install
-rl-insight server start
-```
+| Document | What it covers | When to use it |
+|---|---|---|
+| [Server Installation](./docs/monitor/server_installation.md) | Prometheus, Tempo, and Grafana service setup, including supported Linux platforms, direct installation, offline installation, and existing service binaries. | Use this first if the monitor services are not installed or you need to verify the server environment. |
+| [Quick Start](./docs/monitor/quick_start.md) | A full smoke-test flow: install the Python package, start the monitor stack, emit sample metric/trace data, and open Grafana. | Use this after the services are ready, or when you want to validate the monitor path end to end. |
 
-Then initialize monitoring in training code:
+Recommended order:
 
-Set the RL-Insight server IP before training workers call `insight.init(...)`:
-
-```bash
-export RL_INSIGHT_SERVICE_IP=<server-ip>
-```
-
-```python
-import ray
-import rl_insight as insight
-
-ray.init(address="auto", namespace="rl-insight-monitor")
-insight.init(project="verl", experiment_name="ppo-smoke-test")
-
-insight.metric_count("train_step_total", amount=1, worker="trainer_0")
-insight.metric_value("reward_mean", value=1.23, worker="trainer_0")
-insight.metric_distribution("step_latency_ms", value=42.5, worker="trainer_0")
-
-with insight.trace_state("rollout", state_lane_id="actor_0", step=10):
-    run_rollout()
-```
-
-Read the step-by-step guide in [Quick Start](./docs/monitor/quick_start.md). If you only need the Linux service prerequisites and supported versions, read [Server Installation](./docs/monitor/server_installation.md).
+1. Prepare the server services with [Server Installation](./docs/monitor/server_installation.md).
+2. Run the end-to-end flow with [Quick Start](./docs/monitor/quick_start.md).
 
 ## Server Stack
 
