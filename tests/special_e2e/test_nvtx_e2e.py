@@ -29,13 +29,11 @@ def test_nvtx_e2e_with_input_path(monkeypatch, tmp_path):
     # Ensure the input directory exists
     assert input_dir.exists(), f"Input directory {input_dir} does not exist"
 
-    # Set command line parameters
     test_args = [
         "main.py",
-        f"--input-path={input_dir}",
-        f"--output-path={output_dir}",
-        "--profiler-type=nvtx",
-        "--input-type=multi_json_nvtx",
+        f"input.path={input_dir}",
+        f"output.path={output_dir}",
+        "timeline.parser.type=nvtx",
     ]
     monkeypatch.setattr(sys, "argv", test_args)
 

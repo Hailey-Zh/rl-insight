@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Union
+
+from omegaconf import DictConfig
 
 from rl_insight.data import DataEnum
 
@@ -21,7 +23,7 @@ from rl_insight.data import DataEnum
 class BaseVisualizer(ABC):
     input_type: DataEnum = DataEnum.SUMMARY_EVENT
 
-    def __init__(self, config: dict):
+    def __init__(self, config: Union[DictConfig, dict]):
         self.config = config
 
     @abstractmethod

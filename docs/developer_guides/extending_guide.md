@@ -18,14 +18,16 @@
 1. 新增模块，例如 `rl_insight/parser/my_parser.py`。
 2. 继承 `BaseClusterParser`，实现 `run()` 方法。
 3. `@register_cluster_parser("<name>")`，保证 `get_cluster_parser_cls("<name>")` 可用。
-4. 更新 `main.py` 中 `--profiler-type` 的 help 与相关用户文档。
+4. 若有配置参数，在 `rl_insight/config/config.py` 对应场景的 `ParserConfig` 中添加字段。
+5. 更新相关用户文档。
 
 **Visualizer**
 
 1. 新增模块，例如 `rl_insight/visualizer/my_visualizer.py`。
 2. 继承 `BaseVisualizer`，实现 `run()` 方法。
 3. `@register_cluster_visualizer("<name>")`，保证 `get_cluster_visualizer_cls("<name>")` 可用。
-4. 更新 `main.py` 中 `--vis-type` 的 help 与相关用户文档。
+4. 若有配置参数，在 `rl_insight/config/config.py` 对应场景的 `VisualizerConfig` 中添加字段。
+5. 更新相关用户文档。
 
 若输入或中间数据形态变化，需同步按上一节扩展 **DataRule**。
 
@@ -34,6 +36,5 @@
 适用于：全新的处理范式（跳过步骤、插入预处理、多产物、在线多进程流程等）。
 
 1. 在 `rl_insight/pipeline/` 新增类，实现 `__init__(self, config)`、`run(self)`，按需组合 `DataChecker`、`get_cluster_parser_cls`、`get_cluster_visualizer_cls` 等。
-2. 在 `main.py` 的 `SUPPORTED_PIPELINE_TYPES` 中注册，例如 `{"MyPipeline": MyPipeline}`。
-3. 更新 `--pipeline-type` 的 help，名称与 dict key 一致，并更新文档。
-4. 若数据解析或数据类型发生变化，同步扩展 **DataRule** / **Parser** / **Visualizer**。
+2. 在 `rl_insight/config/config.py` 的 `PipelineConfig.type` 默认值或 preset YAML 中注册新 pipeline 类型。
+3. 若数据解析或数据类型发生变化，同步扩展 **DataRule** / **Parser** / **Visualizer**。

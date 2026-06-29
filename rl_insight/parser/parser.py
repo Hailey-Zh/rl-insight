@@ -12,21 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from loguru import logger
-import multiprocessing
 from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
+import multiprocessing
+
+from loguru import logger
+from omegaconf import DictConfig
 import pandas as pd
 
 from rl_insight.utils.schema import Constant, DataMap
 
 
 class BaseClusterParser(ABC):
-    def __init__(self, params) -> None:
+    def __init__(self, params: Union[DictConfig, dict]) -> None:
         self.events_summary: Optional[pd.DataFrame] = None
-        rank_list = params.get(Constant.RANK_LIST, "all")
+        if isinstance(params, DictConfig):
+            rank_list = params.input.rank_list
+        else:
+            rank_list = params.get(Constant.RANK_LIST, "all")
         self._rank_list = (
             rank_list
             if rank_list == "all"
@@ -60,7 +65,6 @@ class BaseClusterParser(ABC):
         failed_ranks = []
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all tasks
             future_to_rank = {
                 executor.submit(self._mapper_func, data_map): data_map[Constant.RANK_ID]
                 for data_map in data_maps
@@ -104,8 +108,6 @@ class BaseClusterParser(ABC):
         return self.parse_analysis_data(profiler_data_path, rank_id, role)
 
     def reducer_func(self, mapper_res):
-        """Process data collected from all ranks"""
-        # Flatten valid results from all ranks
         reduce_results: list[dict] = []
         for result in mapper_res:
             if not result:

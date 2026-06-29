@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 
+from rl_insight.config import get_config_value
 from rl_insight.visualizer.visualizer import BaseVisualizer, register_cluster_visualizer
 from rl_insight.data import DataEnum
 
@@ -49,13 +50,15 @@ class GmmVisualizer(BaseVisualizer):
     def run(self, data):
         """Run GMM heatmap visualization from parsed data."""
         # Extract parameters from config
-        output_cfg = self.config.get(
-            "output_path", "./output/gmm_group_list_heatmap.png"
+        output_cfg = get_config_value(
+            self.config, "output.path", "./output/gmm_group_list_heatmap.png"
         )
         output = self._resolve_output_path(output_cfg)
-        dpi = self.config.get("dpi", 150)
-        cmap = self.config.get("cmap", "viridis")
-        gmm_per_layer = int(self.config.get("gmm_per_layer", 3))
+        dpi = get_config_value(self.config, "heatmap.visualizer.dpi", 200)
+        cmap = get_config_value(self.config, "heatmap.visualizer.cmap", "viridis")
+        gmm_per_layer = int(
+            get_config_value(self.config, "heatmap.visualizer.gmm_per_layer", 3)
+        )
 
         if not isinstance(data, pd.DataFrame):
             raise ValueError(f"Expected DataFrame, got {type(data).__name__}")

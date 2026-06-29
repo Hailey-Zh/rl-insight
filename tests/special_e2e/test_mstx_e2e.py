@@ -29,12 +29,11 @@ def test_mstx_e2e_with_input_path(monkeypatch, tmp_path):
     # Ensure the input directory exists
     assert input_dir.exists(), f"Input directory {input_dir} does not exist"
 
-    # Set command line parameters
     test_args = [
         "main.py",
-        f"--input-path={input_dir}",
-        f"--output-path={output_dir}",
-        "--profiler-type=mstx",
+        f"input.path={input_dir}",
+        f"output.path={output_dir}",
+        "timeline.parser.type=mstx",
     ]
     monkeypatch.setattr(sys, "argv", test_args)
 

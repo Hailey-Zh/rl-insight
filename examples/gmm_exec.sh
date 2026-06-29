@@ -28,25 +28,23 @@ echo "=========================================="
 
 # Build command
 cmd="python -m rl_insight.main \
-    --input-path \"${GMM_DATA_PATH}\" \
-    --input-type \"gmm_data\" \
-    --profiler-type \"gmm\" \
-    --vis-type \"gmm_heatmap\" \
-    --output-path \"${OUTPUT_PATH}\" \
-    --rank-list \"${RANK_LIST}\" \
-    --dpi \"${DPI}\" \
-    --cmap \"${CMAP}\" \
-    --gmm-per-layer \"${GMM_PER_LAYER}\""
+    input.path=\"${GMM_DATA_PATH}\" \
+    output.path=\"${OUTPUT_PATH}\" \
+    input.rank_list=\"${RANK_LIST}\" \
+    heatmap.parser.type=gmm \
+    heatmap.visualizer.type=gmm_heatmap \
+    heatmap.visualizer.dpi=\"${DPI}\" \
+    heatmap.visualizer.cmap=\"${CMAP}\" \
+    heatmap.visualizer.gmm_per_layer=\"${GMM_PER_LAYER}\""
 
-# Add step and role parameters if specified
 if [ -n "${STEP}" ]; then
     cmd="${cmd} \
-    --step \"${STEP}\""
+    heatmap.parser.step=\"${STEP}\""
 fi
 
 if [ -n "${ROLE}" ]; then
     cmd="${cmd} \
-    --role \"${ROLE}\""
+    heatmap.parser.role=\"${ROLE}\""
 fi
 
 # Execute the command

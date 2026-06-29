@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
+from omegaconf import DictConfig
 
-from .parser import register_parser_specific_args
+from .config import ConfigLoader
 from .pipeline.offline_insight_pipeline import OfflineInsightPipeline
-from .visualizer import register_visualizer_specific_args
 
 SUPPORTED_PIPELINE_TYPES = {"OfflineInsightPipeline": OfflineInsightPipeline}
 
 
-def run_pipeline(config, pipeline_class=None):
+def run_pipeline(config: DictConfig, pipeline_class=None):
     if pipeline_class is None:
         raise ValueError("A pipeline class must be provided.")
 
@@ -29,52 +28,23 @@ def run_pipeline(config, pipeline_class=None):
     runner.run()
 
 
-def main():
-    arg_parser = argparse.ArgumentParser(description="Cluster scheduling visualization")
-    arg_parser.add_argument(
-        "--input-path", required=True, help="Raw path of profiling data"
-    )
-    arg_parser.add_argument(
-        "--input-type",
-        default="multi_json_mstx",
-        help=(
-            "Input data type. Supported: 'multi_json_mstx', 'multi_json_torch', "
-            "'multi_json_nvtx', 'gmm_data'"
-        ),
-    )
-    arg_parser.add_argument(
-        "--profiler-type",
-        default="mstx",
-        help="Profiler type: mstx, torch, nvtx, gmm",
-    )
-    arg_parser.add_argument("--output-path", default="output", help="Output path")
-    arg_parser.add_argument(
-        "--vis-type",
-        default="html",
-        help="Visualization type, supported: html, gmm_heatmap",
-    )
-    arg_parser.add_argument("--rank-list", type=str, help="Rank id list", default="all")
-    arg_parser.add_argument(
-        "--pipeline-type",
-        type=str,
-        help="Tool pipeline type",
-        default="OfflineInsightPipeline",
-    )
+def validate_config(cfg: DictConfig) -> None:
+    if cfg.input.path is None:
+        raise ValueError("input.path is required")
 
-    register_parser_specific_args(arg_parser)
-    register_visualizer_specific_args(arg_parser)
-    config = arg_parser.parse_args()
-
-    # Validate pipeline type
-    if config.pipeline_type not in SUPPORTED_PIPELINE_TYPES:
+    if cfg.pipeline.type not in SUPPORTED_PIPELINE_TYPES:
         supported_types = ", ".join(SUPPORTED_PIPELINE_TYPES.keys())
         raise ValueError(
-            f"Unsupported pipeline type: {config.pipeline_type}. Supported types are: {supported_types}"
+            f"Unsupported pipeline type: {cfg.pipeline.type}. "
+            f"Supported types are: {supported_types}"
         )
 
-    # Run the pipeline
-    pipeline_class = SUPPORTED_PIPELINE_TYPES[config.pipeline_type]
-    run_pipeline(config, pipeline_class)
+
+def main():
+    cfg = ConfigLoader.load_from_cli()
+    validate_config(cfg)
+    pipeline_class = SUPPORTED_PIPELINE_TYPES[cfg.pipeline.type]
+    run_pipeline(cfg, pipeline_class)
 
 
 if __name__ == "__main__":
