@@ -24,6 +24,7 @@ dependencies = [
   "opentelemetry-sdk",
   "opentelemetry-exporter-otlp-proto-http",
   "pyyaml",
+  "ijson",
 ]
 
 [project.scripts]
