@@ -110,9 +110,33 @@ MSTX 输入当前包含三类检查：
 - `trace_view.json` 要求事件包含 `ph`、`name`、`pid`、`tid`
 - `profiler_info_*.json` 要求包含 `config`、`start_info`、`end_info`、`torch_npu_version`、`cann_version`、`rank_id`
 
-## 3. 输出生成summary_event数据
+## 3. NVTX Profiling 数据
+### 3.1 目录结构
 
-### 3.1 格式示例
+```text
+<profile-data-path>/
+  ├── worker_process_*.*.jsonl
+  └── worker_process_*.*.jsonl
+```
+
+### 3.2 worker_process_*.*.jsonl 要点
+
+- jsonl文件包括以`color`开头的条目，条目中的`eventType`等于60，且包含`start`、`end`、`textId`字段
+- jsonl文件需有包括全局时间信息的条目，该条目中有`startTime`信息
+- jsonl文件需有包含RANK信息的条目，对应的，该条目的`value`中有`RANK`信息
+
+### 3.3 内容示例（节选）
+
+```jsonl
+{"id":38,"table":"StringIds","value":"compute_log_prob"}
+{"duration":21068815496,"globalVid":281474976710656,"startTime":6589107243593703,"stopTime":6589128312409199,"table":"ANALYSIS_DETAILS"}
+{"color":255,"domainId":0,"end":21019655556,"eventType":60,"globalTid":282747880941798,"rangeId":1,"start":20979323,"table":"NVTX_EVENTS","textId":38}
+{"name":"PROCESS_0:ENVIRONMENT_VARIABLE","table":"META_DATA_CAPTURE","value":"RANK=\"0\""}
+```
+
+## 4. 输出生成summary_event数据
+
+### 4.1 格式示例
 
 ```
 <summary-event-data-path>/
@@ -147,7 +171,7 @@ MSTX 输入当前包含三类检查：
 ]
 ```
 
-### 3.2 输出数据校验
+### 4.2 输出数据校验
 输出侧校验的目标，是保证 parser 的产出能够被 visualizer 正常消费。
 
 当前 `SUMMARY_EVENT` 类型使用 `ParserOutputValidatorRule` 进行检查，重点包括：
@@ -163,11 +187,11 @@ MSTX 输入当前包含三类检查：
 
 
 
-## 4. VeRL 训练日志（可选校验）
+## 5. VeRL 训练日志（可选校验）
 
 `DataEnum.VERL_LOG` 对 **单个** VeRL 训练 `.log` 文件做存在性与关键指标子串校验（例如 `DataChecker` 或 [`tests/data/check_verl_log.py`](../../tests/data/check_verl_log.py)）。路径必须是文件，不能是目录。
 
-### 4.1 校验规则（以代码为准）
+### 5.1 校验规则（以代码为准）
 
 1. **存在与路径**（`VerlLogExistRule`）：扩展名为 `.log`，文件非空，且能被识别为 VeRL 日志：文件名中含 `verl`（不区分大小写），或文件开头约 64KiB 内容中含 `verl`。
 2. **关键子串**（`VerlLogKeyParamsRule`）：日志正文（读取至多约 2MiB，**不区分大小写**）须**同时包含**以下子串，定义见 [`rl_insight/data/verl_log_rules.py`](../../rl_insight/data/verl_log_rules.py) 中 `DEFAULT_REQUIRED_KEYWORDS`：
@@ -186,7 +210,7 @@ MSTX 输入当前包含三类检查：
 
    若仅存在 `step:` 而日志未打印 `training/global_step` / `training/epoch` 字面量，将不通过。可按业务在代码中传入自定义 `required_keywords` 放宽或收紧。
 
-### 4.2 `data/verl_data/` 示例数据
+### 5.2 `data/verl_data/` 示例数据
 
 仓库 [`data/verl_data/`](../../data/verl_data/) 下提供：
 
@@ -204,7 +228,7 @@ MSTX 输入当前包含三类检查：
 
 `*.log` 若被根目录 `.gitignore` 忽略，需本地自备或使用 `git add -f` 将约定路径纳入版本库。
 
-### 4.3 命令示例
+### 5.3 命令示例
 
 ```bash
 python tests/data/check_verl_log.py data/verl_data/good_minimal_verl.log
