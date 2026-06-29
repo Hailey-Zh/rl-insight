@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Any
+from typing import Any, List, Optional
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+
 import pandas as pd
 
 
@@ -92,6 +92,9 @@ class ParserOutputValidatorRule(ValidationRule):
         missing_cols = self.domains - set(data.columns)
         if missing_cols:
             # Sort for consistent error messages
-            self._error_message = f"Parsing result validation failed: Missing key columns - {sorted(list(missing_cols))}"
+            self._error_message = (
+                "Parsing result validation failed: Missing key columns - "
+                f"{sorted(list(missing_cols))}"
+            )
             return False
         return True
