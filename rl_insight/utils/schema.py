@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import stat
 from dataclasses import dataclass
-from typing import TypedDict, Literal, Optional
+from typing import TypedDict, Literal
 
 
 class DataMap(TypedDict):
     rank_id: int
     role: str
     profiler_data_path: str
-    step: Optional[int]
 
 
-class EventRow(TypedDict, total=False):
+class EventRow(TypedDict):
     name: str
     role: str
     domain: str
@@ -32,79 +33,6 @@ class EventRow(TypedDict, total=False):
     duration_ms: float
     rank_id: int
     tid: int | str
-
-
-class GmmRow(TypedDict, total=False):
-    role: str
-    rank_id: int
-    step: int
-    stage: int
-    expert_index: int
-    load: float
-
-
-# Required DataFrame columns for SUMMARY_EVENT validation (timeline visualizer).
-# EventRow may also carry optional fields (e.g. domain, duration_ms, tid); we only
-# enforce the minimum columns the downstream pipeline needs, not full TypedDict parity.
-EVENTKEYS: tuple[str, ...] = (
-    "role",
-    "name",
-    "rank_id",
-    "start_time_ms",
-    "end_time_ms",
-)
-# Required columns for GMM_SUMMARY; aligns with GmmRow fields used by gmm_heatmap.
-GMMKEYS: tuple[str, ...] = (
-    "role",
-    "rank_id",
-    "step",
-    "stage",
-    "expert_index",
-    "load",
-)
-
-
-class MemoryEventRow(TypedDict):
-    """A single memory allocation / deallocation record produced by MemoryClusterParser.
-
-    Attributes:
-        name: Operator name from ``operator_memory.csv`` (e.g. ``aten::empty``).
-            Covers all operator types, not only ``cpu_op``.
-        role: RL role name (e.g. ``actor_update``).
-        rank_id: Rank identifier.
-        call_stack: Full Python call stack from ``trace_view.json``
-            (frames separated by ``";\\r\\n"``).  Empty string when no
-            matching ``cpu_op`` event is found.
-        call_stack_top: First line of the call stack — the user-code entry
-            point.  Empty string when ``call_stack`` is empty.
-        size_kb: Memory size in KB.  Positive = allocation, negative =
-            deallocation.
-        start_time_ms: Timestamp of the allocation / deallocation in
-            milliseconds.  Named ``start_time_ms`` to align with the
-            ``start_time_ms`` key expected by
-            :class:`BaseClusterParser.reducer_func`.
-        duration_ms: How long the memory block stayed allocated (ms).
-            ``0.0`` when the memory has not been released yet.
-        total_allocated_mb: Cumulative allocated memory (MB) at allocation
-            time.
-        total_reserved_mb: Cumulative reserved memory (MB) at allocation
-            time.
-        total_active_mb: Cumulative active memory (MB) at allocation time.
-        device_type: Device type string (e.g. ``NPU:0``).
-    """
-
-    name: str
-    role: str
-    rank_id: int
-    call_stack: str
-    call_stack_top: str
-    size_kb: float
-    start_time_ms: float
-    duration_ms: float
-    total_allocated_mb: float
-    total_reserved_mb: float
-    total_active_mb: float
-    device_type: str
 
 
 @dataclass
@@ -145,9 +73,6 @@ class Constant:
     TORCH_PROFILER_SUFFIX = ".json.gz"
     TORCH_PROFILER_ASYNC_LLM = "async_llm"
 
-    # for nvtx profile
-    NV_PROFILER_SUFFIX = ".jsonl"
-
     # result files type
     TEXT = "text"
     DB = "db"
@@ -156,3 +81,7 @@ class Constant:
     # Unit Conversion
     US_TO_MS = 1000
     NS_TO_US = 1000
+
+    # file authority
+    WRITE_MODES = stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP
+    WRITE_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_TRUNC

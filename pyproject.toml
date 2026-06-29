@@ -9,26 +9,14 @@ description = "Performance insight tools for reinforcement learning frameworks."
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
-  { name = "rl-insight contributors", email = "huxiaobo@zju.edu.cn" },
+  { name = "rl-insight contributors" },
 ]
 dependencies = [
   "numpy<2.0.0",
   "pandas",
   "plotly",
-  "matplotlib",
   "pytest",
-  "loguru",
-  "ray",
-  "omegaconf",
-  "prometheus_client",
-  "opentelemetry-sdk",
-  "opentelemetry-exporter-otlp-proto-http",
-  "pyyaml",
-  "ijson",
 ]
-
-[project.scripts]
-rl-insight = "experimental.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/verl-project/rl-insight"
@@ -36,17 +24,8 @@ Source = "https://github.com/verl-project/rl-insight"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["rl_insight", "rl_insight.*", "experimental", "experimental.*"]
-
-[tool.setuptools.package-data]
-experimental = [
-  "config/*.yaml",
-  "config/*.yml",
-  "config/*.ini",
-  "config/services/*.yaml",
-  "config/services/*.yml",
-  "config/services/*.ini"
-]
+include = ["rl_insight"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+

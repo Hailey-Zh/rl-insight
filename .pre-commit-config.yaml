@@ -11,13 +11,12 @@ repos:
     rev: "v1.17.0"
     hooks:
       - id: mypy
-        additional_dependencies: [types-PyYAML, types-requests]
 
   - repo: local
     hooks:
       - id: check-license
         name: Check license
-        entry: python3 tests/special_sanity/check_license.py --directories examples tests rl_insight
+        entry: python3 tests/special_sanity/check_license.py --directories examples scripts tests verl setup.py
         language: python
         pass_filenames: false
 

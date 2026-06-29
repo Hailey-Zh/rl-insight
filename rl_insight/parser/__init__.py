@@ -11,35 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from .memory_parser import MemoryClusterParser
-from .mstx_parser import MstxClusterParser
+from .parser import (
+    BaseClusterParser,
+    get_cluster_parser_cls,
+    register_cluster_parser,
+    CLUSTER_PARSER_REGISTRY,
+)
 from .torch_parser import TorchClusterParser
-from .nvtx_parser import NvtxClusterParser
-from .parser import BaseClusterParser, get_cluster_parser_cls as _get_cluster_parser_cls
-
-
-def get_cluster_parser_cls(name):
-    if name == "gmm":
-        from . import gmm_parser  # noqa: F401
-    return _get_cluster_parser_cls(name)
-
-
-def __getattr__(name):
-    if name == "GmmParser":
-        from .gmm_parser import GmmParser
-
-        return GmmParser
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
+from .mstx_parser import MstxClusterParser
 
 __all__ = [
-    "BaseClusterParser",
     "get_cluster_parser_cls",
-    "register_parser_specific_args",
-    "MemoryClusterParser",
-    "MstxClusterParser",
     "TorchClusterParser",
-    "NvtxClusterParser",
-    "GmmParser",
+    "CLUSTER_PARSER_REGISTRY",
+    "MstxClusterParser",
+    "register_cluster_parser",
+    "BaseClusterParser",
 ]

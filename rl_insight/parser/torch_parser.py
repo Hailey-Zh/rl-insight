@@ -14,29 +14,32 @@
 
 import gzip
 import json
-from loguru import logger
+import logging
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
 
 from .parser import BaseClusterParser, register_cluster_parser
-from rl_insight.utils.schema import Constant, DataMap
-from rl_insight.data import DataEnum
+from rl_insight.utils.schema import Constant, DataMap, EventRow
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
 
 
 @register_cluster_parser("torch")
 class TorchClusterParser(BaseClusterParser):
-    input_type: DataEnum = DataEnum.MULTI_JSON_TORCH
-
     def __init__(self, params) -> None:
         super().__init__(params)
 
     def parse_analysis_data(
         self, profiler_data_path: str, rank_id: int, role: str
-    ) -> list[dict[str, Any]]:
+    ) -> list[EventRow]:
         data: dict = {}
-        events: list[dict[str, Any]] = []
+        events: list[EventRow] = []
 
         with gzip.open(profiler_data_path, "rt", encoding="utf-8") as f:
             data = json.load(f)
@@ -92,7 +95,7 @@ class TorchClusterParser(BaseClusterParser):
         duration_ms = (end_ids - start_ids) / us_to_ms
         end_time_ms = start_time_ms + duration_ms
 
-        event_data: dict[str, Any] = {
+        event_data: EventRow = {
             "name": role,
             "role": role,
             "domain": "default",
@@ -162,7 +165,6 @@ class TorchClusterParser(BaseClusterParser):
                     Constant.RANK_ID: -1,  # rank_id for torch will be loaded from json file.
                     Constant.ROLE: task_role,
                     Constant.PROFILER_DATA_PATH: "",
-                    "step": None,
                 }
 
                 if os.path.exists(profiler_data_path):

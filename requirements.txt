@@ -2,15 +2,4 @@
 numpy<2.0.0
 pandas
 plotly
-matplotlib
 pytest
-loguru
-kaleido
-torch==2.7.1
-requests
-ray
-omegaconf
-prometheus_client
-opentelemetry-sdk
-opentelemetry-exporter-otlp-proto-http
-pyyaml

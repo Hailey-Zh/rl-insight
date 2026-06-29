@@ -13,31 +13,14 @@ and visualization.
    :maxdepth: 2
    :caption: Overview
 
-   Architecture <overview/architecture>
-   RL Timeline quickstart <overview/RL_Timeline_quickstart>
-   GMM Expert Load visualization quickstart <overview/gmm_heatmap_quickstart>
-   Memory Parser quickstart <overview/memory_parser_quickstart>
+   insight_framework
+   cluster_analysis
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Data Specification
+   :maxdepth: 1
+   :caption: Getting Started
 
-   Data Specification and Format Guide <data/data_specification>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Utils
-
-   MSTX Preprocessing <utils/mstx_preprocessing>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Developer Guides
-
-   Extending Guide <developer_guides/extending_guide>
-   BaseClusterParser Interface<developer_guides/baseclusterparser_interface>
-   DataRule Extending Guide <developer_guides/rule_extending_guide>
-   Memory Parser Guide <developer_guides/memory_parser_guide>
+   README <../README.md>
 
 Contribution
 -------------
