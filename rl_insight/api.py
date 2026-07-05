@@ -31,7 +31,6 @@ from omegaconf import DictConfig
 from .client import create_monitor_client
 from .utils.monitor_config_loader import load_monitor_config
 from .utils import MonitorEventKind
-from .utils.constants import MonitorEnv
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -97,10 +96,10 @@ def init(
         return
 
     monitor_conf = load_monitor_config(config)
-    if not str(monitor_conf.server.service_ip).strip():
+    if not str(monitor_conf.server.url).strip():
         logger.error(
-            "RL-Insight service IP is required; set %s or server.service_ip in init config.",
-            MonitorEnv.SERVICE_IP,
+            "RL-Insight server URL is required; set RL_INSIGHT_SERVER_URL "
+            "or server.url in init config."
         )
         return
     client = create_monitor_client(monitor_conf)

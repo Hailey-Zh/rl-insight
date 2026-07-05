@@ -24,6 +24,8 @@ from omegaconf import DictConfig
 
 from ..utils.constants import MonitorRayActor
 from .base import MonitorCollector
+from ..server.http_api import get_server_services
+from ..server.network import format_host_port, service_url_from_server_url
 from ..utils import (
     MetricRegistry,
     MonitorEventKind,
@@ -44,22 +46,22 @@ class MonitorHubActor(MonitorCollector):
 
     Actor methods run one at a time (no ``max_concurrency``), so hub state updates are serialized.
 
-    On startup it may rewrite the local Prometheus scrape config when ``server.backend`` is ``ray``.
+    On startup it registers its metrics endpoint with the RL-Insight server.
     """
 
     def __init__(self, conf: DictConfig) -> None:
         """
         Args:
-            conf: Merged monitor config with ``server``, ``otel``, and ``prometheus`` sections.
+            conf: Merged monitor config with ``server`` and ``prometheus`` sections.
         """
         self._conf = conf
 
         namespace = str(self._conf.server.namespace)
-        service_ip = str(self._conf.server.service_ip).strip()
-        trace_endpoint = (
-            f"http://{service_ip}:{int(self._conf.otel.otel_port)}/v1/traces"
-            if service_ip
-            else ""
+        services = get_server_services()
+        trace_endpoint = service_url_from_server_url(
+            str(self._conf.server.url),
+            services.get("otlp_port"),
+            "/v1/traces",
         )
         self._registry = MetricRegistry(namespace=namespace)
         self._trace_collector = OpenTelemetryTraceCollector(
@@ -79,7 +81,7 @@ class MonitorHubActor(MonitorCollector):
         }
 
         start_metrics_http_server(self._metrics_port, addr=self._node_ip)
-        update_prometheus_config(self._conf, [f"{self._node_ip}:{self._metrics_port}"])
+        update_prometheus_config([format_host_port(self._node_ip, self._metrics_port)])
         logger.info(
             "MonitorHubActor HTTP bind %s:%s, Prometheus scrape target %s:%s",
             self._node_ip,
@@ -115,7 +117,11 @@ class MonitorHubActor(MonitorCollector):
             "actor_name": MonitorRayActor.NAME,
             "namespace": MonitorRayActor.NAMESPACE,
             "node_ip": self._node_ip,
-            "metrics_endpoint": f"http://{self._node_ip}:{self._metrics_port}/metrics",
+            "metrics_endpoint": (
+                "http://"
+                + format_host_port(self._node_ip, self._metrics_port)
+                + "/metrics"
+            ),
             "prometheus_metrics_enabled": True,
             "otel_traces_enabled": self._trace_collector.enabled,
             "events_applied": self._events_applied,

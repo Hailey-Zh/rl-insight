@@ -54,7 +54,7 @@ def _add_server_parser(subparsers: argparse._SubParsersAction) -> None:
     commands = ServerCommands()
     server = subparsers.add_parser(
         "server",
-        help="Install and manage Prometheus, Tempo, and Grafana services.",
+        help="Install and manage the RL-Insight server stack.",
     )
     server_subparsers = server.add_subparsers(dest="server_command", required=True)
 
@@ -85,7 +85,7 @@ def _add_server_parser(subparsers: argparse._SubParsersAction) -> None:
 
     start = server_subparsers.add_parser(
         "start",
-        help="Start Prometheus, Tempo, and Grafana.",
+        help="Start the RL-Insight server stack.",
     )
     _add_common_config_args(start)
     mode_group = start.add_mutually_exclusive_group()
@@ -103,7 +103,7 @@ def _add_server_parser(subparsers: argparse._SubParsersAction) -> None:
 
     stop = server_subparsers.add_parser(
         "stop",
-        help="Stop Prometheus, Tempo, and Grafana.",
+        help="Stop the RL-Insight server stack.",
     )
     _add_common_config_args(stop)
     stop.set_defaults(func=commands.stop)

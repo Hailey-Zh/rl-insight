@@ -21,7 +21,7 @@
 
 RL-Insight focuses on the online observability path that RL training needs most:
 
-- **One-command server startup**: install and start Prometheus, Tempo, and Grafana with `rl-insight server install` and `rl-insight server start`.
+- **One-command server startup**: install dependencies and start the RL-Insight server with Prometheus, Tempo, and Grafana with `rl-insight server install` and `rl-insight server start`.
 - **Trainer and rollout metric aggregation**: collect key actor, rollout, and transfer queue metrics in one monitoring view while keeping training-side instrumentation lightweight.
 - **Grafana dashboards for RL workloads**: provide ready-to-use dashboard structure for training metrics, rollout behavior, engine metrics, and RL state timelines.
 
@@ -31,7 +31,7 @@ RL-Insight focuses on the online observability path that RL training needs most:
   <img src="./assets/monitor/rl-insight-monitor-architecture.svg" width="960" alt="RL-Insight monitor architecture">
 </p>
 
-The monitor has two data paths. Trainer-side Python API events are aggregated by the client and monitor hub, then exposed to Prometheus or exported to Tempo. Rollout and inference engines expose their own metrics endpoints directly to Prometheus. Grafana queries Prometheus and Tempo to render the RL dashboards.
+RL-Insight has two metric sources. Training code reports framework-internal signals through the Python API, and RL subsystems such as rollout engines and transfer queues register their own `/metrics` endpoints through the metric aggregation interface. The RL-Insight server coordinates the training side and manages Prometheus, Tempo, and Grafana so metrics, traces, and subsystem signals converge into unified RL dashboards.
 
 ## Demo
 
@@ -69,7 +69,7 @@ RL-Insight manages three open-source services locally on Linux:
 | Tempo | Trace storage and query API | `3200` | `>= 2.0.0` | `2.6.1` |
 | Grafana | Dashboards and trace exploration | `3000` | `>= 13.0.0` | `13.0.0` |
 
-`rl-insight server install` downloads supported Linux binaries into `~/.rl-insight/services`. `rl-insight server start` runs Prometheus, Tempo, and Grafana with data persisted under `~/.rl-insight/data` by default.
+`rl-insight server install` downloads supported Linux binaries into `~/.rl-insight/services`. `rl-insight server start` runs the RL-Insight server with Prometheus, Tempo, and Grafana with data persisted under `~/.rl-insight/data` by default.
 
 ## Training API
 
@@ -95,14 +95,10 @@ insight.init(
         "server": {
             "namespace": "rl_insight_monitor",
             "backend": "ray",
-            "service_ip": "10.0.0.8",
+            "url": "http://<server-ip>:18080",
         },
         "prometheus": {
             "metrics_report_port": 9092,
-            "prometheus_port": 9090,
-        },
-        "otel": {
-            "otel_port": 4318,
         },
     },
 )
@@ -112,10 +108,7 @@ Useful environment variables:
 
 | Variable | Purpose |
 |---|---|
-| `RL_INSIGHT_SERVICE_IP` | RL-Insight server IP used by training workers to export traces. |
-| `RL_INSIGHT_OTEL_PORT` | OTLP HTTP port, default `4318`. |
-| `RL_INSIGHT_PROMETHEUS_PORT` | Prometheus HTTP port, default `9090`. |
-| `RL_INSIGHT_PROMETHEUS_CONFIG_FILE` | Prometheus config path when the monitor hub updates scrape targets. |
+| `RL_INSIGHT_SERVER_URL` | RL-Insight server URL, for example `http://<server-ip>:18080`. |
 
 ## Recipe Offline Analysis
 

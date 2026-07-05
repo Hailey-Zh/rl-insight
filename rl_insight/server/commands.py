@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import argparse
-import socket
 import sys
 from typing import Sequence
 
@@ -33,6 +32,7 @@ from .display import (
     format_panel,
     format_table,
 )
+from .network import format_host_port, local_addresses
 from .runtime import StartedService
 from .services import ServerServiceManager
 
@@ -95,12 +95,12 @@ class ServerCommands:
         return 0 if not manager.missing_dependencies(statuses) else 1
 
     def start(self, args: argparse.Namespace) -> int:
-        """Start local Prometheus, Tempo, and Grafana processes."""
+        """Start local RL-Insight server, Prometheus, Tempo, and Grafana processes."""
         conf = self._load_config(args)
         if not self._stack_management_enabled(conf, action="start"):
             return 0
 
-        traces_endpoint = self.validator.validate_start(conf)
+        self.validator.validate_start(conf)
         manager = ServerServiceManager(conf)
         active_state = manager.active_state()
         if active_state:
@@ -116,7 +116,7 @@ class ServerCommands:
             self.console.print_missing_start_dependencies(missing)
             return 2
 
-        self.console.print_start_summary(manager, conf, traces_endpoint)
+        self.console.print_start_summary(manager, conf)
 
         try:
             stack = manager.start(detach=args.detach, attach_logs=args.attach_logs)
@@ -131,7 +131,7 @@ class ServerCommands:
             print("RL-Insight server services already appear to be running.")
             return 0
 
-        self.console.print_running_summary(conf, traces_endpoint, stack.services)
+        self.console.print_running_summary(conf, stack.services)
 
         if args.detach:
             print("RL-Insight server services are running in background mode.")
@@ -141,7 +141,7 @@ class ServerCommands:
         return manager.wait(stack, attach_logs=args.attach_logs)
 
     def stop(self, args: argparse.Namespace) -> int:
-        """Stop local Prometheus, Tempo, and Grafana processes."""
+        """Stop local RL-Insight server, Prometheus, Tempo, and Grafana processes."""
         conf = self._load_config(args)
         if not self._stack_management_enabled(conf, action="stop"):
             return 0
@@ -185,21 +185,18 @@ class ServerCommands:
 class ServerConfigValidator:
     """Validate the service fields needed before starting the local stack."""
 
-    def validate_start(self, conf: DictConfig) -> str:
-        """Validate required start fields and return the trainer OTLP endpoint."""
+    def validate_start(self, conf: DictConfig) -> None:
+        """Validate required fields before starting the local stack."""
+        if bool(OmegaConf.select(conf, "server.enable", default=True)):
+            self._require_int(conf, "server.port", "RL-Insight server port")
+
         if bool(OmegaConf.select(conf, "prometheus.enable", default=True)):
             self._require_int(
                 conf, "prometheus.prometheus_port", "Prometheus HTTP port"
             )
-            self._require_field(
-                conf, "prometheus.config_file", "Prometheus config file"
-            )
 
-        traces_endpoint = ""
         if bool(OmegaConf.select(conf, "tempo.enable", default=True)):
-            host = _server_host()
-            otel_port = self._require_int(conf, "otel.otel_port", "OTLP HTTP port")
-            traces_endpoint = f"http://{host}:{otel_port}/v1/traces"
+            self._require_int(conf, "otel.otel_port", "OTLP HTTP port")
             self._require_int(conf, "tempo.query_port", "Tempo query port")
             self._require_field(conf, "tempo.config_file", "Tempo config file")
 
@@ -212,7 +209,6 @@ class ServerConfigValidator:
             self._require_field(
                 conf, "grafana.dashboards_dir", "Grafana dashboards directory"
             )
-        return traces_endpoint
 
     @staticmethod
     def _select_str(conf: DictConfig, key: str) -> str:
@@ -274,78 +270,77 @@ class ServerConsole:
         self,
         manager: ServerServiceManager,
         conf: DictConfig,
-        traces_endpoint: str,
     ) -> None:
-        host = _server_host()
-        trainer_url = traces_endpoint.rstrip("/")
+        addresses = local_addresses()
+        panel_rows = []
+        if addresses["ipv4"]:
+            panel_rows.append(("Node IPv4", addresses["ipv4"]))
+        if addresses["ipv6"]:
+            panel_rows.append(("Node IPv6", addresses["ipv6"]))
+        if not panel_rows:
+            panel_rows.append(("Node", "unknown"))
+        panel_rows.extend(
+            [
+                (
+                    "Listen",
+                    "IPv6 (::)" if addresses["family"] == "ipv6" else "IPv4 (0.0.0.0)",
+                ),
+                ("Status", "starting"),
+                ("Logs", "enabled"),
+            ]
+        )
 
         print(format_logo())
-        print(
-            format_panel(
-                "[RL-INSIGHT] Server Stack",
-                [
-                    ("Node", host),
-                    ("Status", "starting"),
-                    ("Logs", "enabled"),
-                ],
-            )
-        )
+        print(format_panel("[RL-INSIGHT] Server Stack", panel_rows))
         print(
             format_table(
-                ["Service", "Endpoint", "Purpose"],
+                ["Service", "Port", "Purpose"],
                 [
-                    [row["service"], row["endpoint"], row["purpose"]]
-                    for row in manager.service_urls(host, trainer_url)
+                    [row["service"], row["port"], row["purpose"]]
+                    for row in manager.service_rows()
                 ],
             )
-        )
-        print(
-            f"Training side: set {MonitorEnv.SERVICE_IP} to the RL-Insight service IP."
         )
 
     def print_running_summary(
         self,
         conf: DictConfig,
-        traces_endpoint: str,
         services: Sequence[StartedService],
     ) -> None:
-        host = _server_host()
+        addresses = local_addresses()
+        host = addresses["host"]
+        family_label = "IPv6" if addresses["family"] == "ipv6" else "IPv4"
         grafana_url = ""
         if bool(OmegaConf.select(conf, "grafana.enable", default=True)):
-            grafana_url = f"http://{host}:{int(conf.grafana.port)}"
-        trainer_url = traces_endpoint.rstrip("/")
+            grafana_url = _service_url(host, conf.grafana.port)
+        server_url = _server_url(conf, host)
         rows = [
             [service.name, service.process.pid, service.log_file]
             for service in services
         ]
         print(format_table(["Service", "PID", "Log"], rows))
-        print(
-            format_panel(
-                "[RL-INSIGHT] Ready",
-                [
-                    ("Grafana", grafana_url or "disabled"),
-                    ("OTLP", trainer_url),
-                ],
+        print("RL-Insight server services are ready.")
+        if server_url:
+            print(
+                "Training side: set "
+                f"{MonitorEnv.SERVER_URL} to the RL-Insight server URL "
+                "reachable from training workers."
             )
-        )
+            print(f"Detected {family_label} URL candidate:")
+            print(f"  export {MonitorEnv.SERVER_URL}={server_url}")
         if grafana_url:
-            print(f"View monitoring dashboard: {grafana_url}")
+            print(f"View monitoring dashboard ({family_label}):")
+            print(f"  {grafana_url}")
 
 
-def _server_host() -> str:
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.connect(("8.8.8.8", 80))
-            host = sock.getsockname()[0]
-            if host and not host.startswith("127."):
-                return host
-    except OSError:
-        pass
+def _service_url(host: str, port: object, path: str = "") -> str:
+    if not host:
+        return ""
+    normalized_path = path if not path or path.startswith("/") else f"/{path}"
+    return f"http://{format_host_port(host, port)}{normalized_path}"
 
-    try:
-        host = socket.gethostbyname(socket.gethostname())
-        if host and not host.startswith("127."):
-            return host
-    except OSError:
-        pass
-    return "127.0.0.1"
+
+def _server_url(conf: DictConfig, host: str) -> str:
+    if not bool(OmegaConf.select(conf, "server.enable", default=True)):
+        return ""
+    return _service_url(host, conf.server.port)
