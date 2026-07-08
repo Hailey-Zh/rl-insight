@@ -69,7 +69,6 @@ class MonitorHubActor(MonitorCollector):
             endpoint=trace_endpoint,
         )
 
-        self._state_pending: dict[tuple[str, str], dict[str, Any]] = {}
         self._events_applied = 0
         self._node_ip = ray.util.get_node_ip_address()
         self._metrics_port = int(self._conf.prometheus.metrics_report_port)
@@ -159,49 +158,16 @@ class MonitorHubActor(MonitorCollector):
         )
 
     def _handle_trace(self, event: dict[str, Any]) -> None:
-        """Dispatch trace events; state_interval spans are merged before export."""
+        """Export one trace span via OTLP (no-op if collector disabled)."""
         if not self._trace_collector.enabled:
             return
         attrs = dict(event.get("attributes") or {})
-        if attrs.get("monitor.trace_segment") == "state_interval":
-            self._handle_state_interval_trace(event, attrs)
-            return
         self._export_trace_span(
             event["name"],
             int(event["start_time_ns"]),
             int(event["end_time_ns"]),
             attrs,
         )
-
-    def _handle_state_interval_trace(
-        self, event: dict[str, Any], attrs: dict[str, Any]
-    ) -> None:
-        """Merge overlapping state intervals per (lane, name); flush on gap."""
-        key = (str(attrs["state_lane_id"]), event["name"])
-        start_ns = int(event["start_time_ns"])
-        end_ns = int(event["end_time_ns"])
-
-        pending = self._state_pending.get(key)
-        if pending is not None and start_ns > pending["end_ns"]:
-            self._export_trace_span(
-                pending["name"],
-                pending["start_ns"],
-                pending["end_ns"],
-                pending["attributes"],
-            )
-            pending = None
-
-        if pending is None:
-            self._state_pending[key] = {
-                "name": event["name"],
-                "start_ns": start_ns,
-                "end_ns": end_ns,
-                "attributes": attrs,
-            }
-            return
-
-        pending["start_ns"] = min(pending["start_ns"], start_ns)
-        pending["end_ns"] = max(pending["end_ns"], end_ns)
 
     def _export_trace_span(
         self,
