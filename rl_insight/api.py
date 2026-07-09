@@ -40,8 +40,8 @@ __all__ = [
     "finish",
     "init",
     "metric_count",
-    "metric_distribution",
-    "metric_value",
+    "metric_gauge",
+    "metric_histogram",
     "trace_state",
     "trace_op",
 ]
@@ -146,10 +146,10 @@ def metric_count(
     _emit(MonitorEventKind.COUNTER, name, float(amount), doc, labels)
 
 
-def metric_value(
+def metric_gauge(
     name: str, value: float, documentation: str = "", **labels: Any
 ) -> None:
-    """Record the latest value for a metric.
+    """Record the latest value for a Prometheus gauge.
 
     Args:
         name: Metric name.
@@ -161,10 +161,10 @@ def metric_value(
     _emit(MonitorEventKind.GAUGE, name, float(value), doc, labels)
 
 
-def metric_distribution(
+def metric_histogram(
     name: str, value: float, documentation: str = "", **labels: Any
 ) -> None:
-    """Record one sample into a metric distribution.
+    """Record one sample into a Prometheus histogram.
 
     Args:
         name: Metric name.

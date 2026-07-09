@@ -79,8 +79,8 @@ RL-Insight manages three open-source services locally on Linux:
 |---|---|
 | `init(project=None, experiment_name=None, config=None)` | Enable monitoring once per process and attach global labels. |
 | `metric_count(name, amount=1.0, documentation="", **labels)` | Increment a Prometheus counter. |
-| `metric_value(name, value, documentation="", **labels)` | Record the latest value for a gauge. |
-| `metric_distribution(name, value, documentation="", **labels)` | Add one sample to a histogram. |
+| `metric_gauge(name, value, documentation="", **labels)` | Record the latest value for a gauge. |
+| `metric_histogram(name, value, documentation="", **labels)` | Add one sample to a histogram. |
 | `trace_state(state_name, state_lane_id=None, **labels)` | Record a named RL state interval. |
 | `trace_op(name=None, extra_labels=None, **static_labels)` | Decorate a synchronous function and emit one duration span per call. |
 | `finish()` | Reset in-process monitor state. |

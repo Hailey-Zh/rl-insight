@@ -50,8 +50,8 @@ def main() -> None:
             time.sleep(0.5)
 
         insight.metric_count("train_step_total", amount=1, **labels)
-        insight.metric_value("reward_mean", value=1.0 + step * 0.01, **labels)
-        insight.metric_distribution(
+        insight.metric_gauge("reward_mean", value=1.0 + step * 0.01, **labels)
+        insight.metric_histogram(
             "step_latency_ms", value=200 + (step % 5) * 20, **labels
         )
 
