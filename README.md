@@ -35,10 +35,22 @@ RL-Insight has two metric sources. Training code reports framework-internal sign
 
 ## Demo
 
-https://github.com/user-attachments/assets/0c9797e7-c0a9-4961-9c8f-1a648f038ada
+Two VeRL Trainer v1 + vLLM integration demos:
+
+### Sync with vLLM
+
+https://github.com/user-attachments/assets/b0f05f3e-8b21-4813-8ba6-4796aa844d62
 
 <p align="center">
-  <a href="https://github.com/user-attachments/assets/0c9797e7-c0a9-4961-9c8f-1a648f038ada">Watch the demo video</a>
+  <a href="https://github.com/user-attachments/assets/b0f05f3e-8b21-4813-8ba6-4796aa844d62">Watch the demo video</a>
+</p>
+
+### Separate Async with vLLM
+
+https://github.com/user-attachments/assets/d0ef242d-e108-468f-afa5-ec9a5321f0e8
+
+<p align="center">
+  <a href="https://github.com/user-attachments/assets/d0ef242d-e108-468f-afa5-ec9a5321f0e8">Watch the demo video</a>
 </p>
 
 ## News
