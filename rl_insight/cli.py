@@ -108,6 +108,23 @@ def _add_server_parser(subparsers: argparse._SubParsersAction) -> None:
     _add_common_config_args(stop)
     stop.set_defaults(func=commands.stop)
 
+    targets = server_subparsers.add_parser(
+        "targets",
+        help="Manage Prometheus scrape targets.",
+    )
+    target_subparsers = targets.add_subparsers(dest="targets_command", required=True)
+    add_targets = target_subparsers.add_parser(
+        "add",
+        help="Add scrape targets from a YAML file.",
+    )
+    add_targets.add_argument(
+        "target_file",
+        type=Path,
+        help="YAML file containing Prometheus jobs and targets.",
+    )
+    _add_common_config_args(add_targets)
+    add_targets.set_defaults(func=commands.add_targets)
+
 
 def _add_common_config_args(parser: argparse.ArgumentParser) -> None:
     """Attach ``--config`` shared by subcommands that read stack YAML."""

@@ -5,6 +5,9 @@ RL-Insight is a performance insight and observability toolkit for reinforcement 
 It focuses on online observability for distributed RL training, with offline analysis utilities collected
 under Recipe.
 
+To collect CPU, memory, disk, network, or Ascend NPU metrics, start with
+:doc:`Hardware Monitoring <monitor/hardware/index>`.
+
 --------------------------------------------
 
 .. _Contents:
@@ -15,6 +18,7 @@ under Recipe.
 
    Quick Start <monitor/quick_start>
    Server Installation <monitor/server_installation>
+   Hardware Monitoring <monitor/hardware/index>
 
 .. toctree::
    :maxdepth: 2

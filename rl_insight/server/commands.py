@@ -18,12 +18,15 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Mapping
 from typing import Sequence
 
+import requests
 from omegaconf import DictConfig, OmegaConf
 
 from ..utils.monitor_config_loader import load_server_config_file
 from ..utils.constants import MonitorEnv
+from ..utils.prometheus_utils import PrometheusTarget, PrometheusTargetStore
 from .dependencies import MissingDependencyError, ServiceStatus
 from .display import (
     active_state_rows,
@@ -160,6 +163,65 @@ class ServerCommands:
         else:
             print("No running RL-Insight server services were found.")
         return code
+
+    def add_targets(self, args: argparse.Namespace) -> int:
+        """Register Prometheus scrape targets from a YAML file."""
+        try:
+            target_conf = OmegaConf.load(args.target_file.expanduser())
+            raw_jobs = OmegaConf.select(target_conf, "jobs")
+            if not OmegaConf.is_list(raw_jobs) or not raw_jobs:
+                raise ValueError("jobs must be a non-empty list")
+
+            jobs = []
+            for index, raw_job in enumerate(raw_jobs):
+                payload = OmegaConf.to_container(raw_job, resolve=True)
+                if not isinstance(payload, Mapping):
+                    raise ValueError(f"jobs[{index}] must be an object")
+                jobs.append(payload)
+        except (OSError, ValueError) as exc:
+            print(f"Invalid target file: {exc}", file=sys.stderr)
+            return 2
+
+        conf = self._load_config(args)
+        store = PrometheusTargetStore.from_config(conf)
+
+        try:
+            for job in jobs:
+                raw_targets = job.get("targets")
+                if not isinstance(raw_targets, list) or not raw_targets:
+                    raise ValueError("targets must be a non-empty list")
+
+                default_labels = job.get("labels") or {}
+                if not isinstance(default_labels, Mapping):
+                    raise ValueError("labels must be an object")
+
+                targets: list[PrometheusTarget] = []
+                for target in raw_targets:
+                    if isinstance(target, str):
+                        address = target.strip()
+                        target_labels = default_labels
+                    elif isinstance(target, Mapping):
+                        target_labels = target.get("labels") or {}
+                        if not isinstance(target_labels, Mapping):
+                            raise ValueError("target labels must be an object")
+                        address = str(target.get("target") or "").strip()
+                        target_labels = {**default_labels, **target_labels}
+                    else:
+                        raise ValueError(
+                            "each target must be either a string or an object"
+                        )
+                    if not address:
+                        raise ValueError("target must be a non-empty string")
+                    targets.append(PrometheusTarget(address, target_labels))
+
+                job_name = str(job.get("job_name") or "").strip()
+                store.register(job_name, targets)
+                print(f"Added {len(targets)} target(s) to job {job_name!r}.")
+            store.reload()
+        except (OSError, ValueError, requests.RequestException) as exc:
+            print(f"Failed to add Prometheus targets: {exc}", file=sys.stderr)
+            return 1
+        return 0
 
     @staticmethod
     def _load_config(args: argparse.Namespace) -> DictConfig:

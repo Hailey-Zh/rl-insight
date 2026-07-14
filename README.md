@@ -23,6 +23,7 @@ RL-Insight focuses on the online observability path that RL training needs most:
 
 - **One-command server startup**: install dependencies and start the RL-Insight server with Prometheus, Tempo, and Grafana with `rl-insight server install` and `rl-insight server start`.
 - **Trainer and rollout metric aggregation**: collect key actor, rollout, and transfer queue metrics in one monitoring view while keeping training-side instrumentation lightweight.
+- **CPU and Ascend NPU monitoring**: register node_exporter and NPU Exporter endpoints to view hardware metrics in the RL-Insight Grafana dashboards.
 - **Grafana dashboards for RL workloads**: provide ready-to-use dashboard structure for training metrics, rollout behavior, engine metrics, and RL state timelines.
 
 ## Architecture
@@ -65,6 +66,7 @@ Start with the guide that matches your current setup:
 |---|---|---|
 | [Server Installation](./docs/monitor/server_installation.md) | Prometheus, Tempo, and Grafana service setup, including supported Linux platforms, direct installation, offline installation, and existing service binaries. | Use this first if the monitor services are not installed or you need to verify the server environment. |
 | [Quick Start](./docs/monitor/quick_start.md) | A full smoke-test flow: install the Python package, start the monitor stack, emit sample metric/trace data, and open Grafana. | Use this after the services are ready, or when you want to validate the monitor path end to end. |
+| [Hardware Monitoring](./docs/monitor/hardware/index.md) | Install or reuse node_exporter and NPU Exporter, then register CPU and Ascend NPU targets with RL-Insight. | Use this when you want hardware metrics in the RL-Insight Grafana dashboards. |
 
 Recommended order:
 
@@ -135,6 +137,7 @@ Offline timeline, heatmap, and parser utilities are kept under `recipe/`; see [R
 
 - [Quick Start](./docs/monitor/quick_start.md): install RL-Insight, start the services, instrument code, and open Grafana.
 - [Server Installation](./docs/monitor/server_installation.md): Linux service requirements, supported OS/CPU combinations, and version policy.
+- [Hardware Monitoring](./docs/monitor/hardware/index.md): install exporters and register CPU or Ascend NPU scrape targets.
 - [Default server config](./rl_insight/config/config.yaml): bundled ports, retention settings, and service config paths.
 - [Recipe README](./recipe/README.md): offline timeline, heatmap, and parser utilities.
 
