@@ -10,12 +10,3 @@ RL-Insight collects hardware metrics from exporters through Prometheus. Install 
 Check whether the exporter already exists before installing it. RL-Insight only registers its endpoint with Prometheus; exporter installation, startup, shutdown, and upgrades remain under user control.
 
 After registration, view the metrics in the RL-Insight Grafana dashboards.
-
-```{toctree}
-:hidden:
-
-cpu_monitoring_zh
-cpu_monitoring_en
-npu_monitoring_zh
-npu_monitoring_en
-```

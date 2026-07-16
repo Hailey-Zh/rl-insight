@@ -56,6 +56,7 @@ https://github.com/user-attachments/assets/d0ef242d-e108-468f-afa5-ec9a5321f0e8
 
 ## News
 
+- [2026/07/16] RL-Insight 0.2.0 is released and now integrated into verl. See the [verl integration guide](https://github.com/verl-project/verl/blob/main/docs/advance/rl_insight.md) to enable training, rollout, TransferQueue, trace, and hardware monitoring.
 - [2026/06/16] RL-Insight officially supports Online Monitor, including one-command server startup, trainer and rollout metric aggregation, and Grafana dashboards for RL workloads.
 
 ## Get Started

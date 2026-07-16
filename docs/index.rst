@@ -21,6 +21,14 @@ To collect CPU, memory, disk, network, or Ascend NPU metrics, start with
    Hardware Monitoring <monitor/hardware/index>
 
 .. toctree::
+   :hidden:
+
+   monitor/hardware/cpu_monitoring_zh
+   monitor/hardware/cpu_monitoring_en
+   monitor/hardware/npu_monitoring_zh
+   monitor/hardware/npu_monitoring_en
+
+.. toctree::
    :maxdepth: 2
    :caption: Recipe Offline Analysis
 
