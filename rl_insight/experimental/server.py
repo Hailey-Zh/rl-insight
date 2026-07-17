@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+
+# Copyright (c) 2026 verl-project authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Timeline visualization server for FileSampleRecord data.
 
 Usage::
@@ -11,21 +26,20 @@ Then open http://localhost:8080 in a browser.
 from __future__ import annotations
 
 import sys as _sys
+from pathlib import Path
 from pathlib import Path as _Path
 
 _project_root = _Path(__file__).resolve().parent.parent.parent
 if str(_project_root) not in _sys.path:
     _sys.path.insert(0, str(_project_root))
 
+import argparse  # noqa: E402
+import json  # noqa: E402
+import time  # noqa: E402
+from http.server import HTTPServer, SimpleHTTPRequestHandler  # noqa: E402
+from typing import Any  # noqa: E402
 
-import argparse
-import json
-import time
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-from pathlib import Path
-from typing import Any
-
-from rl_insight.experimental.file_sample import FileSampleRecord
+from rl_insight.experimental.samples import FileSampleRecord  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Data conversion: FileSampleRecord → timeline JSON
@@ -59,7 +73,8 @@ def build_timeline_data(root_dir: Path) -> dict[str, Any]:
             session_data: dict[str, Any] = {
                 "sample": mem.sample_index,
                 "session": session.session_index,
-                "session_id": session.session_id or f"session-{mem.sample_index}-{session.session_index}",
+                "session_id": session.session_id
+                or f"session-{mem.sample_index}-{session.session_index}",
                 "turns": [],
                 "traj_rewards": {},
                 "turn_count": 0,
@@ -68,13 +83,14 @@ def build_timeline_data(root_dir: Path) -> dict[str, Any]:
 
             turn_counter = 0
             for traj in session.trajectories:
-                session_data["traj_rewards"][str(traj.trajectory_index)] = traj.reward_score or 0.0
+                session_data["traj_rewards"][str(traj.trajectory_index)] = (
+                    traj.reward_score or 0.0
+                )
                 if traj.reward_score and traj.reward_score > 0:
                     overview[uid]["success_count"] += 1
 
                 for step in traj.steps:
                     tool_names = [tr.name for tr in step.tool_results]
-                    tool_types = [_classify_tool(n) for n in tool_names]
 
                     # Determine if this is a tool step or LLM-only step.
                     if tool_names:
@@ -87,9 +103,9 @@ def build_timeline_data(root_dir: Path) -> dict[str, Any]:
                         "traj": traj.trajectory_index,
                         "type": step_type,
                         "tools": tool_names,
-                        "finish_reason": step.exit_reason or "tool_calls" if not step.done else (
-                            traj.exit_reason or "stop"
-                        ),
+                        "finish_reason": step.exit_reason or "tool_calls"
+                        if not step.done
+                        else (traj.exit_reason or "stop"),
                         "content": step.thought[:200] if step.thought else "",
                         "ts": time.time(),
                     }
@@ -175,7 +191,7 @@ def _load_html() -> str:
 # HTML template (modified from original timeline.html)
 # ---------------------------------------------------------------------------
 
-HTML_TEMPLATE = r'''<!DOCTYPE html>
+HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -449,7 +465,7 @@ fetchData();
 setInterval(fetchData, 1000);
 </script>
 </body>
-</html>'''
+</html>"""
 
 
 # ---------------------------------------------------------------------------
@@ -459,9 +475,15 @@ setInterval(fetchData, 1000);
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Timeline visualization server")
-    parser.add_argument("data_dir", help="Root directory containing FileSampleRecord data")
-    parser.add_argument("--port", type=int, default=8080, help="HTTP port (default: 8080)")
-    parser.add_argument("--host", default="0.0.0.0", help="Bind address (default: 0.0.0.0)")
+    parser.add_argument(
+        "data_dir", help="Root directory containing FileSampleRecord data"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8080, help="HTTP port (default: 8080)"
+    )
+    parser.add_argument(
+        "--host", default="0.0.0.0", help="Bind address (default: 0.0.0.0)"
+    )
     args = parser.parse_args()
 
     data_path = Path(args.data_dir).resolve()
@@ -475,7 +497,7 @@ def main() -> None:
     server = HTTPServer((args.host, args.port), TimelineHandler)
     print(f"Serving timeline at http://localhost:{args.port}")
     print(f"Data directory: {data_path}")
-    print(f"Auto-refresh: every 1 second")
+    print("Auto-refresh: every 1 second")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

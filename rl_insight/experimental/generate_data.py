@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+
+# Copyright (c) 2026 verl-project authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Generate realistic FileSampleRecord data for timeline visualization.
 
 Usage::
@@ -11,16 +26,23 @@ rollout attempts, tool calls, and mixed success/failure outcomes.
 
 from __future__ import annotations
 
-import argparse
-import random
 import sys
 from pathlib import Path as _Path
+
 
 _project_root = _Path(__file__).resolve().parent.parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-from rl_insight.experimental import FileSampleRecord, Step, ToolResult
+import argparse  # noqa: E402
+import random  # noqa: E402
+
+from rl_insight.experimental.samples import (  # noqa: E402
+    FileSampleRecord,
+    Step,
+    ToolResult,
+    TrainingStatus,
+)
 
 # ---------------------------------------------------------------------------
 # Scenario templates -- each is a plausible coding task
@@ -29,7 +51,19 @@ from rl_insight.experimental import FileSampleRecord, Step, ToolResult
 SCENARIOS = [
     {
         "task": "Fix separability_matrix bug in CompoundModel",
-        "tools": ["Read", "Bash", "Read", "Read", "Edit", "Bash", "Edit", "Read", "Bash", "Bash", "finish"],
+        "tools": [
+            "Read",
+            "Bash",
+            "Read",
+            "Read",
+            "Edit",
+            "Bash",
+            "Edit",
+            "Read",
+            "Bash",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Let me start by understanding the bug report.",
             "Running the failing test to see the actual error.",
@@ -45,7 +79,18 @@ SCENARIOS = [
     },
     {
         "task": "Optimize database query performance",
-        "tools": ["Bash", "Read", "Bash", "Read", "Edit", "Read", "Edit", "Bash", "Bash", "finish"],
+        "tools": [
+            "Bash",
+            "Read",
+            "Bash",
+            "Read",
+            "Edit",
+            "Read",
+            "Edit",
+            "Bash",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "First, let me run EXPLAIN ANALYZE on the slow query.",
             "Reading the query builder code to understand the join strategy.",
@@ -60,7 +105,19 @@ SCENARIOS = [
     },
     {
         "task": "Add error handling for API timeout",
-        "tools": ["Read", "Bash", "Read", "Read", "Edit", "Edit", "Read", "Bash", "Bash", "Bash", "finish"],
+        "tools": [
+            "Read",
+            "Bash",
+            "Read",
+            "Read",
+            "Edit",
+            "Edit",
+            "Read",
+            "Bash",
+            "Bash",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Finding all places where we call the external payment API.",
             "Checking the current error handling -- looks like bare try/except.",
@@ -76,7 +133,17 @@ SCENARIOS = [
     },
     {
         "task": "Refactor authentication middleware",
-        "tools": ["Read", "Read", "Bash", "Read", "Edit", "Bash", "Edit", "Bash", "finish"],
+        "tools": [
+            "Read",
+            "Read",
+            "Bash",
+            "Read",
+            "Edit",
+            "Bash",
+            "Edit",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Reading the auth middleware to understand the current structure.",
             "The token validation is 200 lines inline, needs extraction.",
@@ -90,7 +157,18 @@ SCENARIOS = [
     },
     {
         "task": "Fix race condition in task scheduler",
-        "tools": ["Read", "Bash", "Read", "Read", "Edit", "Bash", "Edit", "Bash", "Bash", "finish"],
+        "tools": [
+            "Read",
+            "Bash",
+            "Read",
+            "Read",
+            "Edit",
+            "Bash",
+            "Edit",
+            "Bash",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Reading the task scheduler's dispatch loop.",
             "Running stress test with 100 concurrent tasks to reproduce.",
@@ -105,7 +183,17 @@ SCENARIOS = [
     },
     {
         "task": "Implement LRU cache for file reads",
-        "tools": ["Bash", "Read", "Bash", "Read", "Edit", "Bash", "Read", "Bash", "finish"],
+        "tools": [
+            "Bash",
+            "Read",
+            "Bash",
+            "Read",
+            "Edit",
+            "Bash",
+            "Read",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Running a trace on file reads during a typical request.",
             "Reading the FileAccess layer -- lots of repeated config reads.",
@@ -119,7 +207,19 @@ SCENARIOS = [
     },
     {
         "task": "Migrate logging to structured JSON",
-        "tools": ["Bash", "Read", "Read", "Edit", "Edit", "Read", "Edit", "Bash", "Read", "Bash", "finish"],
+        "tools": [
+            "Bash",
+            "Read",
+            "Read",
+            "Edit",
+            "Edit",
+            "Read",
+            "Edit",
+            "Bash",
+            "Read",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Finding all log calls across the codebase -- grep for logger. and print(.",
             "Reading the current logging config in settings.py.",
@@ -135,7 +235,18 @@ SCENARIOS = [
     },
     {
         "task": "Fix memory leak in WebSocket handler",
-        "tools": ["Bash", "Read", "Bash", "Read", "Edit", "Read", "Bash", "Edit", "Bash", "finish"],
+        "tools": [
+            "Bash",
+            "Read",
+            "Bash",
+            "Read",
+            "Edit",
+            "Read",
+            "Bash",
+            "Edit",
+            "Bash",
+            "finish",
+        ],
         "thoughts": [
             "Running memory profiler with 500 concurrent connections.",
             "Reading the WebSocket connection manager class.",
@@ -200,7 +311,9 @@ def generate(output_dir: str, sample_count: int = 8, seed: int = 42) -> None:
 
             for ti in range(traj_count):
                 fs.new_trajectory(session_index=sess_i)
-                generate_trajectory(fs, sess_i, ti, scenario, sample_success, ti == traj_count - 1)
+                generate_trajectory(
+                    fs, sess_i, ti, scenario, sample_success, ti == traj_count - 1
+                )
 
     print(f"Generated {sample_count} samples in {output_dir}")
 
@@ -209,7 +322,7 @@ def build_trajectory_steps(
     scenario: dict,
     sample_success: bool,
     is_last_in_session: bool,
-) -> tuple[list[Step], str, str, float]:
+) -> tuple[list[Step], str, TrainingStatus, float]:
     """Build step data for a trajectory without writing to storage.
 
     Returns (steps, finish_reason, status, reward_score).
@@ -242,7 +355,9 @@ def build_trajectory_steps(
         if tools[-1] == "finish" and reward == 0.0 and random.random() < 0.5:
             tools[-1] = random.choice(["Bash", "Read"])
 
-    status = "success" if reward > 0 else "truncated" if finish_reason == "length" else "success"
+    status: TrainingStatus = "success"
+    if reward <= 0 and finish_reason == "length":
+        status = "truncated"
 
     steps: list[Step] = []
     for step_i in range(len(tools)):
@@ -255,7 +370,9 @@ def build_trajectory_steps(
                 ToolResult(
                     name="finish",
                     action="submit",
-                    observation="Task completed successfully." if reward > 0 else "Unable to resolve.",
+                    observation="Task completed successfully."
+                    if reward > 0
+                    else "Unable to resolve.",
                     status="ok",
                     execution_time=random.uniform(0.1, 0.5),
                 )
@@ -294,7 +411,9 @@ def generate_trajectory(
 ) -> None:
     """Write one trajectory to a FileSampleRecord (all steps at once)."""
     steps, finish_reason, status, reward = build_trajectory_steps(
-        scenario, sample_success, is_last_in_session,
+        scenario,
+        sample_success,
+        is_last_in_session,
     )
     for step in steps:
         fs.add_step(session_index, trajectory_index, step)
@@ -322,7 +441,11 @@ def generate_action(tool_name: str) -> str:
             "str_replace_editor: replace lines 200-210",
         ],
     }
-    return random.choice(actions.get(tool_name, ["..."])) if tool_name in actions else "..."
+    return (
+        random.choice(actions.get(tool_name, ["..."]))
+        if tool_name in actions
+        else "..."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +455,7 @@ def generate_action(tool_name: str) -> str:
 
 def stream(output_dir: str, sample_count: int, interval: float, seed: int) -> None:
     """Generate data incrementally -- one trajectory at a time."""
-    import time as _time
+    import time as _time  # noqa: E402
 
     random.seed(seed)
     uids = []
@@ -342,9 +465,9 @@ def stream(output_dir: str, sample_count: int, interval: float, seed: int) -> No
         if not _Path(output_dir, uid).exists():
             FileSampleRecord.create(output_dir, uid=uid, sample_index=si)
 
-    scenarios = [SCENARIOS[si % len(SCENARIOS)] for si in range(sample_count)]
     sample_success = [random.random() < 0.35 for _ in range(sample_count)]
-    session_counts = [random.randint(3, 5) for _ in range(sample_count)]; session_counts[0] = 2
+    session_counts = [random.randint(3, 5) for _ in range(sample_count)]
+    session_counts[0] = 2
 
     queue: list[tuple[int, int, int, int, bool, int]] = []
     # Build per-session trajectory lists, then interleave round-robin
@@ -354,7 +477,10 @@ def stream(output_dir: str, sample_count: int, interval: float, seed: int) -> No
     for si in range(sample_count):
         for sess_i in range(session_counts[si]):
             traj_count = random.randint(1, 4)
-            task = [(si, sess_i, ti, traj_count, sample_success[si], si % len(SCENARIOS)) for ti in range(traj_count)]
+            task = [
+                (si, sess_i, ti, traj_count, sample_success[si], si % len(SCENARIOS))
+                for ti in range(traj_count)
+            ]
             session_queues.append(task)
 
     # Round-robin interleave across all sessions
@@ -365,8 +491,10 @@ def stream(output_dir: str, sample_count: int, interval: float, seed: int) -> No
                 queue.append(q[round_i])
 
     estimated = len(queue) * interval
-    print(f"Streaming {len(queue)} trajectories across {sample_count} samples (~{estimated:.0f}s).")
-    print(f"Open http://localhost:8080 to watch.\n")
+    print(
+        f"Streaming {len(queue)} trajectories across {sample_count} samples (~{estimated:.0f}s)."
+    )
+    print("Open http://localhost:8080 to watch.\n")
 
     for idx, (si, sess_i, ti, traj_count, success, scenario_idx) in enumerate(queue):
         uid = uids[si]
@@ -376,18 +504,22 @@ def stream(output_dir: str, sample_count: int, interval: float, seed: int) -> No
 
         # Generate step data first, then write step by step with sleeps
         steps, finish_reason, status, reward = build_trajectory_steps(
-            scenario, success, is_last_in_session=(ti == traj_count - 1),
+            scenario,
+            success,
+            is_last_in_session=(ti == traj_count - 1),
         )
         for step_i, step in enumerate(steps):
             fs.add_step(sess_i, ti, step)
-            print(f"[{idx+1}/{len(queue)}] {uid[:12]} s={sess_i} t={ti} step={step_i+1}/{len(steps)}")
+            print(
+                f"[{idx + 1}/{len(queue)}] {uid[:12]} s={sess_i} t={ti} step={step_i + 1}/{len(steps)}"
+            )
             if step_i < len(steps) - 1:
                 _time.sleep(interval)
 
         fs.finish_trajectory(sess_i, ti, finish_reason, status)
         fs.set_trajectory_reward(sess_i, ti, reward)
         r = "+" if reward > 0 else " "
-        print(f"[{idx+1}/{len(queue)}] {uid[:12]} s={sess_i} t={ti} done {r}")
+        print(f"[{idx + 1}/{len(queue)}] {uid[:12]} s={sess_i} t={ti} done {r}")
         if idx < len(queue) - 1:
             _time.sleep(interval)
     print(f"\nDone. {len(queue)} trajectories generated.")
@@ -396,15 +528,33 @@ def stream(output_dir: str, sample_count: int, interval: float, seed: int) -> No
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate fake FileSampleRecord data")
     parser.add_argument("output_dir", help="Output directory for FileSampleRecord data")
-    parser.add_argument("--samples", type=int, default=12, help="Number of samples (default: 12)")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
-    parser.add_argument("--stream", action="store_true", help="Stream data incrementally (1 trajectory/s)")
-    parser.add_argument("--no-clean", action="store_true", help="Do NOT clear output directory before generating")
-    parser.add_argument("--interval", type=float, default=1.0, help="Seconds between trajectories (default: 1.0)")
+    parser.add_argument(
+        "--samples", type=int, default=12, help="Number of samples (default: 12)"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed (default: 42)"
+    )
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="Stream data incrementally (1 trajectory/s)",
+    )
+    parser.add_argument(
+        "--no-clean",
+        action="store_true",
+        help="Do NOT clear output directory before generating",
+    )
+    parser.add_argument(
+        "--interval",
+        type=float,
+        default=1.0,
+        help="Seconds between trajectories (default: 1.0)",
+    )
     args = parser.parse_args()
 
     if not args.no_clean and _Path(args.output_dir).exists():
-        import shutil
+        import shutil  # noqa: E402
+
         shutil.rmtree(args.output_dir)
         print(f"Cleared {args.output_dir}")
 
@@ -413,7 +563,7 @@ def main() -> None:
     else:
         generate(args.output_dir, args.samples, args.seed)
 
-    print(f"\nStart the viewer:")
+    print("\nStart the viewer:")
     print(f"  python rl_insight/experimental/server.py {args.output_dir} --port 8080")
 
 

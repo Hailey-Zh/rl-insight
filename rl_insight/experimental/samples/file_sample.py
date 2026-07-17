@@ -1,3 +1,17 @@
+# Copyright (c) 2026 verl-project authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Filesystem-backed sample for distributed trajectory logging.
 
 Directory layout::
@@ -62,10 +76,9 @@ from pathlib import Path
 from typing import Any
 
 
-from rl_insight.experimental.sample import (
+from rl_insight.experimental.samples.sample import (
     SampleRecord,
     Step,
-    ToolResult,
     TrajectoryRecord,
     TrainingStatus,
 )
@@ -149,7 +162,9 @@ class FileSampleRecord:
         self._write_index(index)
         return traj
 
-    def get_trajectory(self, session_index: int, trajectory_index: int) -> TrajectoryRecord | None:
+    def get_trajectory(
+        self, session_index: int, trajectory_index: int
+    ) -> TrajectoryRecord | None:
         """Read a trajectory from disk, or None."""
         path = self._traj_path(session_index, trajectory_index)
         if not path.exists():
@@ -242,7 +257,9 @@ class FileSampleRecord:
     def _traj_path(self, session_index: int, trajectory_index: int) -> Path:
         return self._dir / f"t_{session_index}_{trajectory_index}.json"
 
-    def _require_traj(self, session_index: int, trajectory_index: int) -> TrajectoryRecord:
+    def _require_traj(
+        self, session_index: int, trajectory_index: int
+    ) -> TrajectoryRecord:
         traj = self.get_trajectory(session_index, trajectory_index)
         if traj is None:
             raise KeyError(
@@ -262,7 +279,9 @@ class FileSampleRecord:
     def _read_traj(self, path: Path) -> TrajectoryRecord:
         return TrajectoryRecord.model_validate(json.loads(path.read_text()))
 
-    def _write_traj(self, session_index: int, trajectory_index: int, traj: TrajectoryRecord) -> None:
+    def _write_traj(
+        self, session_index: int, trajectory_index: int, traj: TrajectoryRecord
+    ) -> None:
         self._atomic_write(
             self._traj_path(session_index, trajectory_index),
             traj.model_dump(),

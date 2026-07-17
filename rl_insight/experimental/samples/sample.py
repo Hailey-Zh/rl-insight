@@ -1,3 +1,17 @@
+# Copyright (c) 2026 verl-project authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """In-memory trajectory data structures, aligned with uni-agent.
 
 Hierarchy::
@@ -58,8 +72,6 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-
-
 # ---------------------------------------------------------------------------
 # ToolResult & Step
 # ---------------------------------------------------------------------------
@@ -109,7 +121,11 @@ class TrajectoryTag(BaseModel):
 
     @property
     def is_normal_exit(self) -> bool:
-        return self.status == "success" and self.finish_reason not in ("", "length", "max_step_limit")
+        return self.status == "success" and self.finish_reason not in (
+            "",
+            "length",
+            "max_step_limit",
+        )
 
 
 class SessionTag(BaseModel):
@@ -375,7 +391,9 @@ class TrajectoryRecord(BaseModel):
         self.tag.response_len = self.response_len
         self.tag.seq_len = self.seq_len
 
-    def set_reward(self, score: float, extra_info: dict[str, Any] | None = None) -> None:
+    def set_reward(
+        self, score: float, extra_info: dict[str, Any] | None = None
+    ) -> None:
         """Set reward score and optional extra info."""
         self.reward_score = score
         if extra_info is not None:
@@ -400,8 +418,6 @@ class TrajectoryRecord(BaseModel):
                 self.steps[-1].exit_reason = exit_reason
         self.tag.finish_reason = exit_reason
         self.tag.status = status
-
-
 
     # ------------------------------------------------------------------
     # JSON
@@ -556,13 +572,9 @@ class SessionRecord(BaseModel):
             traj.trajectory_index = len(self.trajectories)
         self.trajectories.append(traj)
 
-
-
     # ------------------------------------------------------------------
     # JSON
     # ------------------------------------------------------------------
-
-
 
 
 # ---------------------------------------------------------------------------
@@ -603,7 +615,6 @@ class SampleRecord(BaseModel):
     sample_index: int = 0
     sessions: list[SessionRecord] = Field(default_factory=list)
     tag: SampleTag = Field(default_factory=SampleTag)
-
 
     # ------------------------------------------------------------------
     # Properties
@@ -656,7 +667,9 @@ class SampleRecord(BaseModel):
         with open(path) as f:
             flat_trajs = [json.loads(line) for line in f]
 
-        samples: dict[str, dict[int, list[dict]]] = defaultdict(lambda: defaultdict(list))
+        samples: dict[str, dict[int, list[dict]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
         sample_indices: dict[str, int] = {}
 
         for t in flat_trajs:
@@ -677,7 +690,9 @@ class SampleRecord(BaseModel):
                         uid=uid,
                         sample_index=sample_indices[uid],
                         session_index=si,
-                        trajectories=[TrajectoryRecord.from_flat_dict(t) for t in trajs],
+                        trajectories=[
+                            TrajectoryRecord.from_flat_dict(t) for t in trajs
+                        ],
                     )
                 )
             result.append(
@@ -758,7 +773,9 @@ class SampleRecord(BaseModel):
         session = self.get_or_create_session(session_index)
         return session.new_trajectory(**kwargs)
 
-    def get_trajectory(self, session_index: int, trajectory_index: int) -> TrajectoryRecord | None:
+    def get_trajectory(
+        self, session_index: int, trajectory_index: int
+    ) -> TrajectoryRecord | None:
         """Look up a trajectory by session and trajectory index, or None."""
         session = self.get_session(session_index)
         if session is None:
@@ -768,7 +785,9 @@ class SampleRecord(BaseModel):
                 return t
         return None
 
-    def _require_trajectory(self, session_index: int, trajectory_index: int) -> TrajectoryRecord:
+    def _require_trajectory(
+        self, session_index: int, trajectory_index: int
+    ) -> TrajectoryRecord:
         traj = self.get_trajectory(session_index, trajectory_index)
         if traj is None:
             raise KeyError(
@@ -788,7 +807,9 @@ class SampleRecord(BaseModel):
         extra_info: dict[str, Any] | None = None,
     ) -> None:
         """Set reward for a specific trajectory."""
-        self._require_trajectory(session_index, trajectory_index).set_reward(score, extra_info)
+        self._require_trajectory(session_index, trajectory_index).set_reward(
+            score, extra_info
+        )
 
     def set_trajectory_token_data(
         self,
@@ -820,15 +841,13 @@ class SampleRecord(BaseModel):
         status: TrainingStatus = "success",
     ) -> None:
         """Mark a trajectory as done."""
-        self._require_trajectory(session_index, trajectory_index).finish(exit_reason, status)
-
-
+        self._require_trajectory(session_index, trajectory_index).finish(
+            exit_reason, status
+        )
 
     # ------------------------------------------------------------------
     # JSON
     # ------------------------------------------------------------------
-
-
 
 
 # ---------------------------------------------------------------------------

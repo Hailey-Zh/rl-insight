@@ -1,3 +1,17 @@
+# Copyright (c) 2026 verl-project authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Common trajectory CRUD interface.
 
 ``BaseSample`` is a ``Protocol`` -- any object with these six methods
@@ -52,15 +66,11 @@ class BaseSample(Protocol):
         """Create and return a new trajectory in the given session."""
         ...
 
-    def get_trajectory(
-        self, session_index: int, trajectory_index: int
-    ) -> Any:
+    def get_trajectory(self, session_index: int, trajectory_index: int) -> Any:
         """Return the trajectory at ``(session, trajectory)``, or None."""
         ...
 
-    def add_step(
-        self, session_index: int, trajectory_index: int, step: Any
-    ) -> None:
+    def add_step(self, session_index: int, trajectory_index: int, step: Any) -> None:
         """Append a step to a trajectory."""
         ...
 

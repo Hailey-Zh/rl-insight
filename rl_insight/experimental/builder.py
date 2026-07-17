@@ -1,3 +1,17 @@
+# Copyright (c) 2026 verl-project authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Event-driven trajectory builder.
 
 Accepts two event types and drives a ``BaseSample`` lifecycle internally.
@@ -31,8 +45,13 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from rl_insight.experimental.base import BaseSample
-from rl_insight.experimental.sample import SampleRecord, Step, ToolResult, TrainingStatus
+from rl_insight.experimental.samples.base import BaseSample
+from rl_insight.experimental.samples.sample import (
+    SampleRecord,
+    Step,
+    ToolResult,
+    TrainingStatus,
+)
 
 # Factory signature: (uid: str, sample_index: int) -> BaseSample
 SampleFactory = Callable[[str, int], BaseSample]
@@ -136,7 +155,6 @@ class TrajectoryBuilder:
         trajectory_index = event.get("trajectory_index", cursor[1])
         step_index = event.get("step_index", 0)
         finish_reason = event.get("finish_reason", "tool_calls")
-        completion_tokens = event.get("completion_tokens", 0)
         assistant_msg = event.get("assistant_msg")
         thought = event.get("thought", "")
         tool_results_raw = event.get("tool_results", [])
@@ -162,7 +180,9 @@ class TrajectoryBuilder:
             status: TrainingStatus = "success"
             if finish_reason == "length":
                 status = "truncated"
-            sample.finish_trajectory(session_index, trajectory_index, finish_reason, status)
+            sample.finish_trajectory(
+                session_index, trajectory_index, finish_reason, status
+            )
             self._cursor[uid] = (session_index, trajectory_index + 1)
         else:
             self._cursor[uid] = (session_index, trajectory_index)
