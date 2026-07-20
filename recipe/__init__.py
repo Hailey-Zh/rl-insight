@@ -15,15 +15,64 @@
 """
 Cluster scheduling analysis and visualization for RL workloads.
 
-This package exposes built-in parser classes and a CLI entry helper.
+Recipe dependencies are optional and loaded only when recipe functionality is used.
 """
 
-from .parser import MstxClusterParser, TorchClusterParser, NvtxClusterParser
+from importlib import import_module
+from typing import Any
+
+
+_EXPORTS = {
+    "MstxClusterParser": ".parser",
+    "TorchClusterParser": ".parser",
+    "NvtxClusterParser": ".parser",
+}
+
+_RECIPE_DEPENDENCY_MODULES = {
+    "ijson",
+    "kaleido",
+    "loguru",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "plotly",
+    "torch",
+}
+_RECIPE_INSTALL_HINT = 'pip install "rl-insight[recipe]"'
+
+
+def _is_missing_recipe_dependency(exc: ModuleNotFoundError) -> bool:
+    module_name = (exc.name or "").partition(".")[0]
+    return module_name in _RECIPE_DEPENDENCY_MODULES
+
+
+def __getattr__(name: str) -> Any:
+    module_name = _EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    try:
+        value = getattr(import_module(module_name, __name__), name)
+    except ModuleNotFoundError as exc:
+        if _is_missing_recipe_dependency(exc):
+            raise ImportError(
+                f"Failed to import {name} because Recipe dependencies are not "
+                f"installed. Install them with: {_RECIPE_INSTALL_HINT}"
+            ) from exc
+        raise
+    globals()[name] = value
+    return value
 
 
 def main():
-    # Lazy import avoids preloading recipe.main during package import.
-    from .main import main as _main
+    try:
+        from .main import main as _main
+    except ModuleNotFoundError as exc:
+        if _is_missing_recipe_dependency(exc):
+            raise SystemExit(
+                "Recipe dependencies are not installed. "
+                f"Install them with: {_RECIPE_INSTALL_HINT}"
+            ) from exc
+        raise
 
     return _main()
 

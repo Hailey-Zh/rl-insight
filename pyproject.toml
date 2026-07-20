@@ -12,12 +12,6 @@ authors = [
   { name = "rl-insight contributors", email = "huxiaobo@zju.edu.cn" },
 ]
 dependencies = [
-  "numpy",
-  "pandas",
-  "plotly",
-  "matplotlib",
-  "pytest",
-  "loguru",
   "ray",
   "omegaconf",
   "fastapi",
@@ -27,12 +21,26 @@ dependencies = [
   "opentelemetry-sdk",
   "opentelemetry-exporter-otlp-proto-http",
   "pyyaml",
+]
+
+[project.optional-dependencies]
+recipe = [
+  "numpy",
+  "pandas",
+  "plotly",
+  "matplotlib",
+  "loguru",
+  "kaleido",
+  "torch",
   "ijson",
+]
+test = [
+  "pytest",
 ]
 
 [project.scripts]
 rl-insight = "rl_insight.cli:main"
-rl-insight-recipe = "recipe.main:main"
+rl-insight-recipe = "recipe:main"
 
 [project.urls]
 Homepage = "https://github.com/verl-project/rl-insight"

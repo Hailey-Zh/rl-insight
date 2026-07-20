@@ -22,8 +22,13 @@ Furthermore, you can learn the development plan and roadmap via [RFC](https://gi
 - Install the project in editable mode:
 
 ```bash
-pip install -r requirements.txt
-pip install -e .
+pip install -e ".[test]"
+```
+
+When developing or testing Recipe, include its optional dependencies:
+
+```bash
+pip install -e ".[recipe,test]"
 ```
 
 ## Code Linting and Formatting

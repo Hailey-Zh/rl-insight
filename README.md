@@ -128,6 +128,11 @@ Useful environment variables:
 ## Recipe Offline Analysis
 
 Offline timeline, heatmap, and parser utilities are kept under `recipe/`; see [Recipe README](./recipe/README.md) for that workflow.
+Install the optional recipe dependencies with:
+
+```bash
+pip install "rl-insight[recipe]"
+```
 
 ## Roadmap
 

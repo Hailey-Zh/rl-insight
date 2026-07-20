@@ -41,7 +41,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install monitor test dependencies
-        run: pip install -e .
+        run: pip install -e ".[test]"
 
       - name: Run monitor unit tests
         run: pytest -s -x tests/monitor/ut

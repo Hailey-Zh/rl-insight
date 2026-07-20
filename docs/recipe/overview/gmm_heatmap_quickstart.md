@@ -17,7 +17,7 @@ RL-Insight 是一个强化学习性能数据快速分析的可视化工具，基
 需要 **Python >= 3.10**。
 
 ```bash
-pip install rl-insight
+pip install "rl-insight[recipe]"
 ```
 
 若需使用最新未发布功能，可从源码安装：
@@ -25,8 +25,7 @@ pip install rl-insight
 ```bash
 git clone https://github.com/verl-project/rl-insight.git
 cd rl-insight
-pip install -r requirements.txt
-pip install -e .
+pip install -e ".[recipe]"
 ```
 
 ## 二、快速使用

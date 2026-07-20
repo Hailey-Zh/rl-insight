@@ -25,7 +25,7 @@ RL-Insight Recipe provides offline performance insight capabilities for RL train
 Python >= 3.10 required.
 
 ```bash
-pip install rl-insight
+pip install "rl-insight[recipe]"
 ```
 
 For the latest unreleased features, install from source:
@@ -33,8 +33,7 @@ For the latest unreleased features, install from source:
 ```bash
 git clone https://github.com/verl-project/rl-insight.git
 cd rl-insight
-pip install -r requirements.txt
-pip install -e .
+pip install -e ".[recipe]"
 ```
 
 ## Quickstart

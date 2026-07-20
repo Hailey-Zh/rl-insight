@@ -9,7 +9,6 @@ For service version requirements and Linux platform support, see [Server Install
 From the repository root:
 
 ```bash
-pip install -r requirements.txt
 pip install -e .
 ```
 
