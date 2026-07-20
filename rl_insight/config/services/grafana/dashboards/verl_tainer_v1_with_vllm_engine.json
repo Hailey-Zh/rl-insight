@@ -16547,6 +16547,18 @@
                 },
                 {
                   "kind": "Transformation",
+                  "group": "extractFields",
+                  "spec": {
+                    "options": {
+                      "source": "state_lane_id",
+                      "format": "regexp",
+                      "replace": false,
+                      "regExp": "/^(?<state_lane_prefix>.+?)(?:[_-](?<state_lane_num>\\d+))?$/"
+                    }
+                  }
+                },
+                {
+                  "kind": "Transformation",
                   "group": "convertFieldType",
                   "spec": {
                     "options": {
@@ -16558,41 +16570,13 @@
                         {
                           "destinationType": "time",
                           "targetField": "End time"
+                        },
+                        {
+                          "destinationType": "number",
+                          "targetField": "state_lane_num"
                         }
                       ],
                       "fields": {}
-                    }
-                  }
-                },
-                {
-                  "kind": "Transformation",
-                  "group": "organize",
-                  "spec": {
-                    "options": {
-                      "excludeByName": {
-                        "Duration": true,
-                        "Duration / 1000000": true,
-                        "End time": false,
-                        "Name": true,
-                        "Span ID": true,
-                        "Trace Name": false,
-                        "Trace Service": true,
-                        "traceIdHidden": true
-                      },
-                      "includeByName": {},
-                      "indexByName": {
-                        "Duration": 8,
-                        "Duration / 1000000": 9,
-                        "End time": 5,
-                        "Name": 6,
-                        "Span ID": 3,
-                        "Start time": 4,
-                        "Trace Name": 2,
-                        "Trace Service": 1,
-                        "state_lane_id": 7,
-                        "traceIdHidden": 0
-                      },
-                      "renameByName": {}
                     }
                   }
                 },
@@ -16604,9 +16588,44 @@
                       "fields": {},
                       "sort": [
                         {
-                          "field": "state_lane_id"
+                          "field": "state_lane_num"
                         }
                       ]
+                    }
+                  }
+                },
+                {
+                  "kind": "Transformation",
+                  "group": "sortBy",
+                  "spec": {
+                    "options": {
+                      "fields": {},
+                      "sort": [
+                        {
+                          "field": "state_lane_prefix"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "kind": "Transformation",
+                  "group": "organize",
+                  "spec": {
+                    "options": {
+                      "excludeByName": {
+                        "Duration": true,
+                        "Duration / 1000000": true,
+                        "Name": true,
+                        "Span ID": true,
+                        "Trace Service": true,
+                        "traceIdHidden": true,
+                        "state_lane_prefix": true,
+                        "state_lane_num": true
+                      },
+                      "includeByName": {},
+                      "indexByName": {},
+                      "renameByName": {}
                     }
                   }
                 },
@@ -16643,7 +16662,7 @@
                   "showLegend": true
                 },
                 "mergeValues": true,
-                "perPage": 16,
+                "perPage": 64,
                 "rowHeight": 0.9,
                 "showValue": "auto",
                 "tooltip": {
