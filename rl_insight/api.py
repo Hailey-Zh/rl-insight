@@ -30,6 +30,8 @@ from typing import Any, Callable, Generator, Mapping
 from omegaconf import DictConfig
 
 from .client import create_monitor_client
+from .experimental import TrajectoryBuilder
+from .experimental.samples import TempoSampleRecord
 from .utils.monitor_config_loader import load_monitor_config
 from .utils import MonitorEventKind
 
@@ -43,6 +45,7 @@ __all__ = [
     "metric_gauge",
     "metric_histogram",
     "trace_state",
+    "trace_trajectory",
     "trace_op",
 ]
 
@@ -69,6 +72,10 @@ class _MonitorState:
 
 
 _STATE = _MonitorState()
+
+# Process-wide lazy builder that turns trajectory events into Tempo spans.
+# Built on first ``trace_trajectory`` call, reset by ``finish``.
+_TRACE_BUILDER: TrajectoryBuilder | None = None
 
 
 def init(
@@ -127,9 +134,10 @@ def finish() -> None:
 
     Does not stop the hub HTTP server or kill the detached Ray actor.
     """
-    global _STATE
+    global _STATE, _TRACE_BUILDER
     _STATE = _MonitorState()
     _LANES.clear()
+    _TRACE_BUILDER = None
 
 
 def metric_count(
@@ -282,6 +290,34 @@ def trace_state(
                 end_time_ns=emit_args[2],
                 attributes=emit_args[3],
             )
+
+
+def trace_trajectory(event: dict[str, Any]) -> None:
+    """Forward one trajectory event to Tempo as one root span per step.
+
+    Lazily builds a process-wide :class:`TrajectoryBuilder` whose sink is a
+    :class:`TempoSampleRecord` emitting through :func:`_emit_trace_span`. The
+    ``event`` object is passed straight to ``builder.feed`` without copying or
+    parsing.
+
+    Safe to call whether or not :func:`init` succeeded: when monitoring is off,
+    :func:`_emit_trace_span` is a no-op, so events are still tracked internally
+    but no spans are sent. :func:`finish` resets the builder.
+
+    Args:
+        event: A ``trajectory_begin`` or ``step`` event dict, as accepted by
+            :meth:`TrajectoryBuilder.feed`.
+    """
+    global _TRACE_BUILDER
+    if _TRACE_BUILDER is None:
+        _TRACE_BUILDER = TrajectoryBuilder(
+            sample_factory=lambda uid, sample_index: TempoSampleRecord(
+                uid=uid,
+                sample_index=sample_index,
+                emit_span=_emit_trace_span,
+            )
+        )
+    _TRACE_BUILDER.feed(event)
 
 
 def trace_op(

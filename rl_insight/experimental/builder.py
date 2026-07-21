@@ -173,6 +173,12 @@ class TrajectoryBuilder:
         if assistant_msg and isinstance(assistant_msg, dict):
             step.response = assistant_msg.get("content", "")
 
+        # Fill exit_reason from the event's finish_reason before persisting, so
+        # every step records why it ended (including non-terminal ones like
+        # tool_calls / max_step_limit). Sinks that key off exit_reason at
+        # add_step time (e.g. TempoSampleRecord) depend on this.
+        step.exit_reason = finish_reason
+
         sample.add_step(session_index, trajectory_index, step)
 
         # Finish the trajectory if this step ends it.

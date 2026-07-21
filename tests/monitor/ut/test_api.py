@@ -166,3 +166,145 @@ def test_finish_should_disable_future_events_when_monitoring_was_enabled(
 
     assert recording_client.events == []
     assert api._STATE.enabled is False
+
+
+# ---------------------------------------------------------------------------
+# trace_trajectory
+# ---------------------------------------------------------------------------
+
+
+def test_trace_trajectory_builds_lazily_and_reuses_the_builder() -> None:
+    assert api._TRACE_BUILDER is None
+
+    api.trace_trajectory({"event": "trajectory_begin", "uid": "u"})
+    builder = api._TRACE_BUILDER
+    assert builder is not None
+
+    api.trace_trajectory({"event": "step", "uid": "u", "finish_reason": "stop"})
+    assert api._TRACE_BUILDER is builder  # reused, not rebuilt
+
+
+def test_trace_trajectory_passes_the_event_object_through_without_copying() -> None:
+    class FakeBuilder:
+        def __init__(self) -> None:
+            self.fed: list[dict[str, Any]] = []
+
+        def feed(self, event: dict[str, Any]) -> None:
+            self.fed.append(event)
+
+    fake = FakeBuilder()
+    api._TRACE_BUILDER = fake  # type: ignore[assignment]
+
+    event = {"event": "step", "uid": "u"}
+    api.trace_trajectory(event)
+
+    assert fake.fed[0] is event  # same object, not a copy
+
+
+def test_trace_trajectory_emits_one_trace_span_per_step_on_a_shared_lane(
+    recording_client: RecordingClient,
+) -> None:
+    # Timing arithmetic is covered exhaustively by the tempo_sample unit tests
+    # (injected FakeClock); here we assert clock-independent invariants only.
+    api.trace_trajectory({"event": "trajectory_begin", "uid": "task-1"})
+    api.trace_trajectory(
+        {
+            "event": "step",
+            "uid": "task-1",
+            "step_index": 1,
+            "finish_reason": "tool_calls",
+            "thought": "t1",
+            "tool_results": [{"name": "search"}],
+        }
+    )
+    api.trace_trajectory(
+        {
+            "event": "step",
+            "uid": "task-1",
+            "step_index": 2,
+            "finish_reason": "stop",
+            "assistant_msg": {"content": "answer"},
+        }
+    )
+
+    assert [e["kind"] for e in recording_client.events] == [
+        MonitorEventKind.TRACE,
+        MonitorEventKind.TRACE,
+    ]
+
+    first, second = recording_client.events
+    assert first["name"] == "tool_calls"
+    assert first["attributes"] == {
+        "process_id": api._STATE.process_id,
+        "project": "project-a",
+        "experiment_name": "experiment-a",
+        "monitor.trace_segment": "state_interval",
+        "monitor.trace_source": "trajectory",
+        "state_name": "tool_calls",
+        "state_lane_id": "uid=task-1/sample=0/session=0/traj=0",
+        "uid": "task-1",
+        "sample": "0",
+        "session": "0",
+        "traj": "0",
+        "turn": "1",
+        "type": "tool",
+        "tools": '["search"]',
+        "finish_reason": "tool_calls",
+        "content": "t1",
+        "trajectory.timing_source": "receive_time",
+    }
+
+    assert second["name"] == "stop"
+    assert second["attributes"]["type"] == "llm"
+    assert second["attributes"]["tools"] == "[]"
+    assert second["attributes"]["content"] == "answer"
+    assert second["attributes"]["turn"] == "2"
+    # Both steps share the same trajectory lane.
+    assert first["attributes"]["state_lane_id"] == second["attributes"]["state_lane_id"]
+    # Each span has positive duration; the non-terminal step1 hands its end
+    # boundary to step2 (lane continuity), independent of the wall clock.
+    assert first["start_time_ns"] < first["end_time_ns"]
+    assert second["start_time_ns"] == first["end_time_ns"]
+    assert second["start_time_ns"] < second["end_time_ns"]
+
+
+def test_trace_trajectory_is_safe_when_monitoring_is_off() -> None:
+    # No init(): monitoring disabled. Calls must not raise or emit.
+    api.trace_trajectory({"event": "trajectory_begin", "uid": "u"})
+    api.trace_trajectory({"event": "step", "uid": "u", "finish_reason": "stop"})
+
+    assert api._STATE.enabled is False
+    assert api._TRACE_BUILDER is not None  # built, but every emit was a no-op
+
+
+def test_finish_resets_the_trace_builder() -> None:
+    api.trace_trajectory({"event": "trajectory_begin", "uid": "u"})
+    first = api._TRACE_BUILDER
+    assert first is not None
+
+    api.finish()
+    assert api._TRACE_BUILDER is None
+
+    api.trace_trajectory({"event": "trajectory_begin", "uid": "u"})
+    assert api._TRACE_BUILDER is not None
+    assert api._TRACE_BUILDER is not first  # fresh builder, no carried-over state
+
+
+def test_trace_trajectory_propagates_builder_errors() -> None:
+    with pytest.raises(ValueError):
+        api.trace_trajectory({"event": "bogus", "uid": "u"})
+
+
+def test_trace_trajectory_propagates_emit_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BoomClient:
+        def apply_event(self, event: dict[str, Any]) -> None:
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(api, "create_monitor_client", lambda _conf: BoomClient())
+    api.init(config={"server": {"url": "http://monitor:18080"}})
+
+    api.trace_trajectory({"event": "trajectory_begin", "uid": "u"})  # no emit yet
+    with pytest.raises(RuntimeError, match="boom"):
+        api.trace_trajectory({"event": "step", "uid": "u", "finish_reason": "stop"})

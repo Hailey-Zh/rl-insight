@@ -17,6 +17,7 @@
 - ``BaseSample``: Protocol defining the six-method CRUD interface.
 - ``SampleRecord``: In-memory Pydantic model.
 - ``FileSampleRecord``: Filesystem-backed, one JSON per trajectory.
+- ``TempoSampleRecord``: Emit-through, one trace span per step (no local copy).
 """
 
 from rl_insight.experimental.samples.base import BaseSample
@@ -33,6 +34,7 @@ from rl_insight.experimental.samples.sample import (
     TrajectoryTag,
     TrainingStatus,
 )
+from rl_insight.experimental.samples.tempo_sample import TempoSampleRecord
 
 __all__ = [
     "BaseSample",
@@ -42,6 +44,7 @@ __all__ = [
     "SessionRecord",
     "SessionTag",
     "Step",
+    "TempoSampleRecord",
     "ToolResult",
     "ToolStatus",
     "TrajectoryRecord",
